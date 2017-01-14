@@ -20,8 +20,11 @@ public:
 		m_leftDrive1 = new Victor(1);
 		m_rightDrive2 = new Victor(2);
 		m_rightDrive3 = new Victor(3);
+
 		m_thing = new VictorSP(4);
-		m_Gamepad = new XboxController(0);
+
+		m_Gamepad = new XboxController(1);
+		m_Joystick = new Joystick(0);
 	}
 
 	void AutonomousInit() override {
@@ -38,6 +41,7 @@ public:
 
 	void TeleopPeriodic() {
 		operateThing();
+		teleDrive();
 	}
 
 	void TestPeriodic() {
@@ -52,13 +56,21 @@ public:
 	}
 
 	void teleDrive() {
-/*		leftSpeed = m_Joystick->GetY() - m_Joystick->GetX()
-		rightSpeed = 1) - scale(limit(expo(m_Gamepad2->GetRawAxis(4), 3), 1), 0.7f), PRACTICE_DRIVE_LIMIT) + scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.7f), PRACTICE_DRIVE_LIMIT) + scale(expo(-m_Gamepad->GetRawAxis(1), 2), 0.5) - scale(expo(m_Gamepad->GetRawAxis(0), 3), 0.5);
+		float leftSpeed = limit(m_Joystick->GetY() - m_Joystick->GetX());
+		float rightSpeed = limit(-m_Joystick->GetY() - m_Joystick->GetX());
 
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
 		m_rightDrive2->SetSpeed(rightSpeed);
-		m_rightDrive3->SetSpeed(rightSpeed);*/
+		m_rightDrive3->SetSpeed(rightSpeed);
+	}
+
+	float limit(float s) {
+		if (s > 1)
+			return 1;
+		else if (s < -1)
+			return -1;
+		return s;
 	}
 
 };
