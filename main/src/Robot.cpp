@@ -61,6 +61,10 @@ public:
 		m_rightDrive3->SetSpeed(rightSpeed);*/
 	}
 
+	void realSpeed() {
+
+	}
+
 };
 
 START_ROBOT_CLASS(Robot)
