@@ -71,9 +71,6 @@ public:
 		else if (s < -1)
 			return -1;
 		return s;
-	}
-
-	void realSpeed() {
 
 	}
 
