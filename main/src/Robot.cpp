@@ -7,15 +7,22 @@
 #include <LiveWindow/LiveWindow.h>
 
 class Robot: public frc::IterativeRobot {
-public:
+private:
+
+	//Drive Motors
 	Victor *m_leftDrive0; //4
 	Victor *m_leftDrive1; //1
 	Victor *m_rightDrive2; //2
 	Victor *m_rightDrive3; //3
 	VictorSP *m_thing;
+
+	//Controllers
 	Joystick *m_Joystick;
 	XboxController *m_Gamepad;
-	void RobotInit() {
+
+
+	void RobotInit(void) override
+	{
 		m_leftDrive0 = new Victor(0);
 		m_leftDrive1 = new Victor(1);
 		m_rightDrive2 = new Victor(2);
@@ -27,19 +34,23 @@ public:
 		m_Joystick = new Joystick(0);
 	}
 
-	void AutonomousInit() override {
+	void AutonomousInit() override
+	{
 
 	}
 
-	void AutonomousPeriodic() {
+	void AutonomousPeriodic()
+	{
 
 	}
 
-	void TeleopInit() {
+	void TeleopInit()
+	{
 
 	}
 
-	void TeleopPeriodic() {
+	void TeleopPeriodic()
+	{
 		operateThing();
 		teleDrive();
 	}
