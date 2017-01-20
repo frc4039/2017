@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include "WPILib.h"
+#include "AHRS.h"
 
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
@@ -10,11 +11,17 @@ class Robot: public frc::IterativeRobot {
 private:
 
 	//Drive Motors
-	Victor *m_leftDrive0; //4
-	Victor *m_leftDrive1; //1
-	Victor *m_rightDrive2; //2
-	Victor *m_rightDrive3; //3
+	VictorSP *m_leftDrive0; //4
+	VictorSP *m_leftDrive1; //1
+	VictorSP *m_rightDrive2; //2
+	VictorSP *m_rightDrive3; //3
 	VictorSP *m_thing;
+
+	CameraServer *USB;
+
+	//Shooter Motors
+
+	//Test Motors
 
 	//Controllers
 	Joystick *m_Joystick;
@@ -23,15 +30,27 @@ private:
 
 	void RobotInit(void) override
 	{
-		m_leftDrive0 = new Victor(0);
-		m_leftDrive1 = new Victor(1);
-		m_rightDrive2 = new Victor(2);
-		m_rightDrive3 = new Victor(3);
+		m_leftDrive0 = new VictorSP(0);
+		m_leftDrive1 = new VictorSP(1);
+		m_rightDrive2 = new VictorSP(2);
+		m_rightDrive3 = new VictorSP(3);
 
 		m_thing = new VictorSP(4);
 
 		m_Gamepad = new XboxController(1);
 		m_Joystick = new Joystick(0);
+
+		USB = new CameraServer;
+	}
+
+	void DisabledInit()
+	{
+
+	}
+
+	void DisabledPeriodic()
+	{
+		USB->
 	}
 
 	void AutonomousInit() override
@@ -76,6 +95,8 @@ private:
 		m_rightDrive3->SetSpeed(rightSpeed);
 	}
 
+
+//=======================MATHY FUNCTIONS============================
 	float limit(float s) {
 		if (s > 1)
 			return 1;
