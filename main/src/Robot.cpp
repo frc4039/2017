@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include "WPILib.h"
+#include "AHRS.h"
 
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
@@ -14,7 +15,15 @@ private:
 	VictorSP *m_leftDrive1; //1
 	VictorSP *m_rightDrive2; //2
 	VictorSP *m_rightDrive3; //3
+
 	//VictorSPSP *m_thing;
+
+
+	CameraServer *USB;
+
+	//Shooter Motors
+
+	//Test Motors
 
 	//Controllers
 	Joystick *m_Joystick;
@@ -32,6 +41,18 @@ private:
 
 		m_Gamepad = new XboxController(1);
 		m_Joystick = new Joystick(0);
+
+		USB = new CameraServer;
+	}
+
+	void DisabledInit()
+	{
+
+	}
+
+	void DisabledPeriodic()
+	{
+		USB->
 	}
 
 	void AutonomousInit() override
@@ -76,6 +97,8 @@ private:
 		m_rightDrive3->SetSpeed(rightSpeed);
 	}
 
+
+//=======================MATHY FUNCTIONS============================
 	float limit(float s) {
 		if (s > 1)
 			return 1;
