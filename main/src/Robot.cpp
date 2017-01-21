@@ -3,6 +3,7 @@
 #include <string>
 #include "WPILib.h"
 #include "AHRS.h"
+#include "CANTalon.h"
 
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
@@ -10,11 +11,16 @@
 class Robot: public frc::IterativeRobot {
 private:
 
+	int manipState;
+	VictorSP *m_agitator;
+	VictorSP *m_intakeWheel;
+
 	//Drive Motors
 	VictorSP *m_leftDrive0; //4
 	VictorSP *m_leftDrive1; //1
 	VictorSP *m_rightDrive2; //2
 	VictorSP *m_rightDrive3; //3
+
 
 	//VictorSPSP *m_thing;
 
@@ -22,6 +28,8 @@ private:
 	CameraServer *USB;
 
 	//Shooter Motors
+	//CANTalon *//m_shooter1;
+	//CANTalon *//m_shooter2;
 
 	//Test Motors
 
@@ -37,12 +45,21 @@ private:
 		m_rightDrive2 = new VictorSP(2);
 		m_rightDrive3 = new VictorSP(3);
 
+		//m_shooter1 = new CANTalon(0);
+		//m_shooter2 = new CANTalon(1);
+
+		m_agitator = new VictorSP(4);
+		m_intakeWheel = new VictorSP(5);
+
 		//m_thing = new VictorSP(4);
 
 		m_Gamepad = new XboxController(1);
 		m_Joystick = new Joystick(0);
 
-		USB = new CameraServer;
+		manipState = 0;
+
+
+
 	}
 
 	void DisabledInit()
@@ -52,7 +69,7 @@ private:
 
 	void DisabledPeriodic()
 	{
-		USB->
+
 	}
 
 	void AutonomousInit() override
@@ -95,6 +112,52 @@ private:
 		m_leftDrive1->SetSpeed(leftSpeed);
 		m_rightDrive2->SetSpeed(rightSpeed);
 		m_rightDrive3->SetSpeed(rightSpeed);
+	}
+
+	void manipulatorControl(void) {
+
+		switch(manipState)
+		{
+		case 0:
+			m_agitator->SetSpeed(0);
+			m_intakeWheel->SetSpeed(0);
+			//m_shooter1->Set(0);
+			//m_shooter2->Set(0);
+
+			if(m_Gamepad->GetAButton())
+			{
+				manipState = 1;
+			}
+
+			break;
+
+		case 1:
+			m_agitator->SetSpeed(0);
+			m_intakeWheel->SetSpeed(1.0);
+			//m_shooter1->Set(0);
+			//m_shooter2->Set(0);
+
+			if(m_Gamepad->GetBButton())
+			{
+				manipState = 2;
+			}
+
+			break;
+
+		case 2:
+			m_agitator->SetSpeed(1.0);
+			m_intakeWheel->SetSpeed(0);
+			//m_shooter1->Set(1.0);
+			//m_shooter2->Set(1.0);
+
+			if(m_Gamepad->GetXButton())
+			{
+				manipState = 1;
+			}
+
+			break;
+		}
+
 	}
 
 
