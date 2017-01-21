@@ -1,7 +1,4 @@
 main/Debug/
-.*
-*.xml
-*.properties
 *~*
 a.out
 *.pyc

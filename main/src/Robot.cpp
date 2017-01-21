@@ -20,9 +20,7 @@ private:
 	VictorSP *m_leftDrive1; //1
 	VictorSP *m_rightDrive2; //2
 	VictorSP *m_rightDrive3; //3
-
-
-	//VictorSPSP *m_thing;
+	//VictorSP *m_thing;
 
 
 	CameraServer *USB;
