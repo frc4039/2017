@@ -4,6 +4,7 @@
 #include "WPILib.h"
 #include "AHRS.h"
 #include "CANTalon.h"
+#include "SimPID.h"
 
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
@@ -20,8 +21,10 @@ private:
 	VictorSP *m_leftDrive1; //1
 	VictorSP *m_rightDrive2; //2
 	VictorSP *m_rightDrive3; //3
-	//VictorSP *m_thing;
+	VictorSP *m_thing;
 
+	Encoder *m_LeftEncoder;
+	Encoder *m_RightEncoder;
 
 	CameraServer *USB;
 
@@ -30,10 +33,14 @@ private:
 	//CANTalon *//m_shooter2;
 
 	//Test Motors
+	VictorSP *m_shooter;
 
 	//Controllers
 	Joystick *m_Joystick;
 	XboxController *m_Gamepad;
+
+	//PIDS
+	SimPID *speedToPowerPID;
 
 
 	void RobotInit(void) override
@@ -43,19 +50,23 @@ private:
 		m_rightDrive2 = new VictorSP(2);
 		m_rightDrive3 = new VictorSP(3);
 
+		m_LeftEncoder = new Encoder(0,1);
+		m_RightEncoder = new Encoder(2,3);
 		//m_shooter1 = new CANTalon(0);
 		//m_shooter2 = new CANTalon(1);
+		m_shooter = new VictorSP(8);
 
 		m_agitator = new VictorSP(4);
 		m_intakeWheel = new VictorSP(5);
 
-		//m_thing = new VictorSP(4);
+		m_thing = new VictorSP(9);
 
 		m_Gamepad = new XboxController(1);
 		m_Joystick = new Joystick(0);
 
 		manipState = 0;
 
+		speedToPowerPID = new SimPID;
 
 
 	}
@@ -67,7 +78,7 @@ private:
 
 	void DisabledPeriodic()
 	{
-
+		DriverStation::ReportError("Left encoder" + std::to_string((long)m_LeftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_RightEncoder->Get()));
 	}
 
 	void AutonomousInit() override
@@ -87,20 +98,31 @@ private:
 
 	void TeleopPeriodic()
 	{
-		//operateThing();
+		operateIntake();
 		teleDrive();
+		operateShooter();
 	}
 
 	void TestPeriodic() {
 
 	}
 
-	/*void operateThing() {
+	void operateIntake() {
 		if (m_Gamepad->GetYButton())
 			m_thing->SetSpeed(1.0);
+		else if(m_Gamepad->GetXButton())
+			m_thing->SetSpeed(-1.0);
 		else
 			m_thing->SetSpeed(0.0);
-	}*/
+	}
+
+	void operateShooter()
+	{
+		if (m_Gamepad->GetAButton())
+			m_shooter->SetSpeed(1.0);
+		else
+			m_shooter->SetSpeed(0.0);
+	}
 
 	void teleDrive() {
 		float leftSpeed = limit(m_Joystick->GetY() - m_Joystick->GetX());
@@ -158,6 +180,8 @@ private:
 
 	}
 
+
+	//bool speedToPower(float )
 
 //=======================MATHY FUNCTIONS============================
 	float limit(float s) {
