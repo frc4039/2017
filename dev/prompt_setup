@@ -1,0 +1,14 @@
+export CLICOLOR=1
+export LSCOLORS=ExFxBxDxCxegedabagacad
+
+function parse_git_branch () {
+  git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+ 
+RED="\[\033[0;31m\]"
+YELLOW="\[\033[0;33m\]"
+GREEN="\[\033[0;32m\]"
+NO_COLOR="\[\033[0m\]"
+ 
+export PS1="\[\033[36m\]\u\[\033[m\]@\[\033[32m\]\h:\[\033[33;1m\]\w$RED\$(parse_git_branch)\[\033[m\]\$ "
+
