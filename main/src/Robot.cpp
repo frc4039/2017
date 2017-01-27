@@ -2,7 +2,6 @@
 #include <memory>
 #include <string>
 #include "WPILib.h"
-#include "AHRS.h"
 #include "CANTalon.h"
 #include "SimPID.h"
 
@@ -150,10 +149,10 @@ private:
 	}
 */
 	void trim(){
-		float motorOutput = m_Joystick->GetRawAxis(3);
+		float motorOutput = 0.5*m_Joystick->GetRawAxis(3) + 0.5;
 
 		m_shooter->Set(motorOutput);
-		float encoderRPM = m_shooter->GetSpeed()*1875.f/128.f;
+		float encoderRPM = m_shooter->GetSpeed()*18.75f/128.f;
 
 		DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
 
