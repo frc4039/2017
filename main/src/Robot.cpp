@@ -9,7 +9,8 @@
 #include <LiveWindow/LiveWindow.h>
 
 //CONSTANTS
-#define SHOOTER_RPM
+#define SHOOTER_RPM 4000
+#define NATIVE_TO_RPM 0.146484375f
 
 class Robot: public frc::IterativeRobot {
 private:
@@ -70,6 +71,15 @@ private:
 
 		//Talons
 		m_shooter = new CANTalon(0);
+		m_shooter->SetControlMode(CANSpeedController::kSpeed);
+		m_shooter->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
+		m_shooter->ConfigEncoderCodesPerRev(4096);
+		m_shooter->SetSensorDirection(true);
+		m_shooter->SetPID(0.21,0,0.0001, 0.03);
+		m_shooter->SetCloseLoopRampRate(0);
+		m_shooter->SelectProfileSlot(0);
+		m_shooter->SetAllowableClosedLoopErr(100000);
+
 	//	m_shooter2 = new CANTalon(1);
 
 		//encoders
@@ -124,7 +134,8 @@ private:
 		operateIntake();
 		teleDrive();
 		//operateShooter();
-		trim();
+		//trim();
+		ShooterPID();
 	}
 
 	void TestPeriodic() {
@@ -151,12 +162,31 @@ private:
 	void trim(){
 		float motorOutput = 0.5*m_Joystick->GetRawAxis(3) + 0.5;
 
+
 		m_shooter->Set(motorOutput);
 		float encoderRPM = m_shooter->GetSpeed()*18.75f/128.f;
 
 		DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
 
 
+	}
+
+	void ShooterPID(){
+
+		int setPoint = 1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 3000;
+
+		float encoderRPM = m_shooter->GetSpeed();
+		DriverStation::ReportError("setpoint: "+ std::to_string(setPoint) + "Encoder speed" + std::to_string((long)encoderRPM));
+
+		if(m_Joystick->GetRawButton(1)){
+			m_shooter->SetSetpoint(setPoint);
+			DriverStation::ReportError("speed error " + std::to_string(m_shooter->GetClosedLoopError()*NATIVE_TO_RPM));
+		}
+		else
+		{
+			m_shooter->SetSetpoint(0);
+
+		}
 	}
 
 	void teleDrive() {
