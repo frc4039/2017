@@ -77,8 +77,8 @@ private:
 		m_shooter->SetSensorDirection(true);
 		m_shooter->SetPID(0.21,0,0.0001, 0.03);
 		m_shooter->SetCloseLoopRampRate(0);
+		m_shooter->SetAllowableClosedLoopErr(0);
 		m_shooter->SelectProfileSlot(0);
-		m_shooter->SetAllowableClosedLoopErr(100000);
 
 	//	m_shooter2 = new CANTalon(1);
 
