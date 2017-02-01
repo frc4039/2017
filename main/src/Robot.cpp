@@ -1,10 +1,12 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <ctime>
+//#include <time.h>
+#include <fstream>
 #include "WPILib.h"
 #include "CANTalon.h"
 #include "SimPID.h"
-
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
 
@@ -16,6 +18,10 @@ class Robot: public frc::IterativeRobot {
 private:
 	//variables
 	int manipState;
+	int fileCount;
+
+	char buffer[50];
+	std::ofstream file;
 
 	//Victors
 	VictorSP *m_leftDrive0;
@@ -51,11 +57,16 @@ private:
 	//PIDS
 	SimPID *speedToPowerPID;
 
+	//Time
+	timeval tv;
 
 	void RobotInit(void) override
 	{
 		//variables
 		manipState = 0;
+		fileCount = 1;
+
+		file.open("/home/lvuser/pid.csv", std::ios::out);
 
 		//Victors
 		m_leftDrive0 = new VictorSP(0);
@@ -126,13 +137,14 @@ private:
 
 	void TeleopInit()
 	{
-
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
 	}
 
 	void TeleopPeriodic()
 	{
 		operateIntake();
-		teleDrive();
+		//teleDrive();
 		//operateShooter();
 		//trim();
 		ShooterPID();
@@ -171,16 +183,25 @@ private:
 
 	}
 
-	void ShooterPID(){
+	void ShooterPID() {
 
-		int setPoint = 1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 3000;
+		int setPoint = 1500 * (0.5 * m_Joystick->GetRawAxis(2) + 0.5) + 3000;
+
+		gettimeofday(&tv, 0);
 
 		float encoderRPM = m_shooter->GetSpeed();
 		DriverStation::ReportError("setpoint: "+ std::to_string(setPoint) + "Encoder speed" + std::to_string((long)encoderRPM));
 
+
+
 		if(m_Joystick->GetRawButton(1)){
 			m_shooter->SetSetpoint(setPoint);
 			DriverStation::ReportError("speed error " + std::to_string(m_shooter->GetClosedLoopError()*NATIVE_TO_RPM));
+
+			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooter->GetClosedLoopError()*NATIVE_TO_RPM);
+			file << buffer;
+
+			fileCount++;
 		}
 		else
 		{
@@ -242,9 +263,18 @@ private:
 
 			break;
 		}
-
 	}
 
+	/*void createPIDFile() {
+		gettimeofday(&tv, 0);
+
+		char buffer[50];
+		ofstream file;
+		file.open["pid.csv"];
+
+
+
+	}*/
 
 	//bool speedToPower(float )
 
