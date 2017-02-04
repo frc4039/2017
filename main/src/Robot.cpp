@@ -16,6 +16,7 @@
 #define NATIVE_TO_RPM 0.146484375f
 #define GP_R 6
 #define GP_L 5
+#define SHOOTER_RATIO setPoint/4096
 
 class Robot: public frc::IterativeRobot {
 private:
@@ -35,15 +36,15 @@ private:
 	VictorSP *m_rightDrive2;
 	VictorSP *m_rightDrive3;
 
-	VictorSP *m_thing;
-	//VictorSP *m_shooter;
-	VictorSP *m_agitator;
-	VictorSP *m_intakeWheel;
+	VictorSP *m_intake;
+	//VictorSP *m_shooter1;
+	//VictorSP *m_agitator;
 	VictorSP *m_elevate;
+	VictorSP *m_windowMotor;
 
 	//Talons
-	CANTalon *m_shooter;
-	//CANTalon *m_shooter2;
+	CANTalon *m_shooter1;
+	//CANTalon *//;
 
 	//Encoders
 	Encoder *m_LeftEncoder;
@@ -53,7 +54,8 @@ private:
 	AHRS *nav;
 
 	//Vision
-	CameraServer *USB;
+	CameraServer *m_gearCam;
+	CameraServer *m_shotCam;
 
 	//Controllers
 	Joystick *m_Joystick;
@@ -61,14 +63,20 @@ private:
 
 	//pneumatics
 	Solenoid *m_shiftHigh, *m_shiftLow;
+	Solenoid *m_gearHoldOut, *m_gearHoldIn;
 
 	//PIDS
 	SimPID *speedToPowerPID;
 	SimPID *drivePID;
 	SimPID *turnPID;
 
+	//LED
+	Relay *m_gearLED;
+	Relay *m_shotLED;
+
 	//Time
 	timeval tv;
+	Timer *agTimer;
 
 	void RobotInit(void) override
 	{
@@ -85,26 +93,28 @@ private:
 		m_leftDrive1 = new VictorSP(1);
 		m_rightDrive2 = new VictorSP(2);
 		m_rightDrive3 = new VictorSP(3);
-
-		m_agitator = new VictorSP(4);
-		m_intakeWheel = new VictorSP(5);
+		//m_agitator = new VictorSP(4);
+		m_windowMotor = new VictorSP(5);
 		m_elevate = new VictorSP(7);
-		m_thing = new VictorSP(9);
+		m_intake = new VictorSP(9);
 
-		//m_shooter = new VictorSP(8);
+		//m_shooter1 = new VictorSP(8);
 
 		//Talons
-		m_shooter = new CANTalon(0);
-		m_shooter->SetControlMode(CANSpeedController::kSpeed);
-		m_shooter->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
-		m_shooter->ConfigEncoderCodesPerRev(4096);
-		m_shooter->SetSensorDirection(true);
-		m_shooter->SetPID(0.01, 0, 0.1, 0.028);
-		m_shooter->SetCloseLoopRampRate(0);
-		m_shooter->SetAllowableClosedLoopErr(0);
-		m_shooter->SelectProfileSlot(0);
+		m_shooter1 = new CANTalon(1);
+		m_shooter1->SetControlMode(CANSpeedController::kSpeed);
+		m_shooter1->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
+		m_shooter1->ConfigEncoderCodesPerRev(4096);
+		m_shooter1->SetSensorDirection(true);
+		m_shooter1->SetPID(0.01, 0, 0.1, 0.028);
+		m_shooter1->SetCloseLoopRampRate(0);
+		m_shooter1->SetAllowableClosedLoopErr(0);
+		m_shooter1->SelectProfileSlot(0);
 
-	//	m_shooter2 = new CANTalon(1);
+		// = new CANTalon(2);
+		//->SetControlMode(CANSpeedController::kSpeed);
+
+	//	m_shooter12 = new CANTalon(1);
 
 		//encoders
 		m_LeftEncoder = new Encoder(0,1);
@@ -122,6 +132,12 @@ private:
 		//pneumatics
 		m_shiftHigh = new Solenoid(1);
 		m_shiftLow = new Solenoid(2);
+		m_gearHoldOut = new Solenoid(3);
+		m_gearHoldIn = new Solenoid(4);
+
+		//LED
+		m_gearLED = new Relay(0);
+		m_shotLED = new Relay(1);
 
 		//PID
 		speedToPowerPID = new SimPID;
@@ -133,11 +149,17 @@ private:
 		turnPID = new SimPID(0, 0, 0);
 		turnPID->setMinDoneCycles(1);
 		turnPID->setMaxOutput(0.3);
+
+		//Time
+		agTimer = new Timer();
+		agTimer->Reset();
+		agTimer->Stop();
 	}
 
 	void DisabledInit()
 	{
-
+		m_gearLED->Set(Relay::kOff);
+		m_shotLED->Set(Relay::kOff);
 	}
 
 	void DisabledPeriodic()
@@ -154,9 +176,11 @@ private:
 		}
 	}
 
-	void AutonomousInit() override
+	void AutonomousInit()
 	{
 		autoState = 0;
+		m_gearLED->Set(Relay::kOn);
+		m_shotLED->Set(Relay::kOn);
 	}
 
 	void AutonomousPeriodic()
@@ -167,10 +191,10 @@ private:
 			m_leftDrive1->SetSpeed(0.f);
 			m_rightDrive2->SetSpeed(0.f);
 			m_rightDrive3->SetSpeed(0.f);
-			m_intakeWheel->SetSpeed(0.f);
-			m_agitator->SetSpeed(0.f);
-			m_thing->SetSpeed(0.f);
-			m_shooter->Set(0.f);
+			//m_agitator->SetSpeed(0.f);
+			m_intake->SetSpeed(0.f);
+			m_shooter1->Set(0.f);
+			m_windowMotor->SetSpeed(0.f);
 			break;
 		case 1: //load on right peg
 			switch(autoState) {
@@ -189,16 +213,18 @@ private:
 	{
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
+		m_gearLED->Set(Relay::kOn);
 	}
 
 	void TeleopPeriodic()
 	{
 		operateIntake();
-		//teleDrive();
+		teleDrive();
 		//operateShooter();
 		//trim();
 		ShooterPID();
 		operateShift();
+		operateGear();
 	}
 
 	void TestPeriodic() {
@@ -209,15 +235,15 @@ private:
 
 	void operateIntake() {
 		if (m_Gamepad->GetRawButton(GP_R)) {
-			m_thing->SetSpeed(1.0);
+			m_intake->SetSpeed(1.0);
 			m_elevate->SetSpeed(1.0);
 		}
 		else if(m_Gamepad->GetRawButton(GP_L)) {
-			m_thing->SetSpeed(-1.0);
+			m_intake->SetSpeed(-1.0);
 			m_elevate->SetSpeed(-1.0);
 		}
 		else {
-			m_thing->SetSpeed(0.f);
+			m_intake->SetSpeed(0.f);
 			m_elevate->SetSpeed(0.f);
 		}
 	}
@@ -225,17 +251,17 @@ private:
 	/*void operateShooter()
 	{
 		if (m_Gamepad->GetAButton())
-			m_shooter->SetSpeed(1.0);
+			m_shooter1->SetSpeed(1.0);
 		else
-			m_shooter->SetSpeed(0.0);
+			m_shooter1->SetSpeed(0.0);
 	}
 */
 	void trim(){
 		float motorOutput = 0.5*m_Joystick->GetRawAxis(3) + 0.5;
 
 
-		m_shooter->Set(motorOutput);
-		float encoderRPM = m_shooter->GetSpeed()*18.75f/128.f;
+		m_shooter1->Set(motorOutput);
+		float encoderRPM = m_shooter1->GetSpeed()*18.75f/128.f;
 
 		DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
 
@@ -244,28 +270,37 @@ private:
 
 	void ShooterPID() {
 
-		int setPoint = 1500 * (0.5 * m_Joystick->GetRawAxis(2) + 0.5) + 3000;
-
+		//int setPoint = 1500 * (0.5 * m_Joystick->GetRawAxis(2) + 0.5) + 3000;
+		int setPoint = 3800;
 		gettimeofday(&tv, 0);
 
-		float encoderRPM = m_shooter->GetSpeed();
+		float encoderRPM = m_shooter1->GetSpeed();
 		DriverStation::ReportError("setpoint: "+ std::to_string(setPoint) + "Encoder speed" + std::to_string((long)encoderRPM));
 
 
 
-		if(m_Joystick->GetRawButton(2)){
-			m_shooter->SetSetpoint(setPoint);
-			DriverStation::ReportError("speed error " + std::to_string(m_shooter->GetClosedLoopError()*NATIVE_TO_RPM));
+		if(m_Gamepad->GetAButton()) {
+			agTimer->Start();
+			m_shooter1->SetSetpoint(setPoint);
+			//->Set(SHOOTER_RATIO);
 
-			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooter->GetClosedLoopError()*NATIVE_TO_RPM);
+			if(agTimer->Get() > 1.0)
+				m_windowMotor->SetSpeed(0.7);
+
+			DriverStation::ReportError("speed error " + std::to_string(m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM));
+
+			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM);
 			file << buffer;
 
 			fileCount++;
 		}
 		else
 		{
-			m_shooter->SetSetpoint(0);
-
+			m_shooter1->SetSetpoint(0);
+			//->Set(0.f);
+			m_windowMotor->SetSpeed(0.f);
+			agTimer->Reset();
+			agTimer->Stop();
 		}
 	}
 
@@ -279,15 +314,14 @@ private:
 		m_rightDrive3->SetSpeed(rightSpeed);
 	}
 
-	void manipulatorControl(void) {
+/*	void manipulatorControl(void) {
 
 		switch(manipState)
 		{
 		case 0:
-			m_agitator->SetSpeed(0);
-			m_intakeWheel->SetSpeed(0);
+			//m_agitator->SetSpeed(0);
 			//m_shooter1->Set(0);
-			//m_shooter2->Set(0);
+			////->Set(0);
 
 			if(m_Gamepad->GetAButton())
 			{
@@ -297,10 +331,9 @@ private:
 			break;
 
 		case 1:
-			m_agitator->SetSpeed(0);
-			m_intakeWheel->SetSpeed(1.0);
+			//m_agitator->SetSpeed(0);
 			//m_shooter1->Set(0);
-			//m_shooter2->Set(0);
+			////->Set(0);
 
 			if(m_Gamepad->GetBButton())
 			{
@@ -310,10 +343,9 @@ private:
 			break;
 
 		case 2:
-			m_agitator->SetSpeed(1.0);
-			m_intakeWheel->SetSpeed(0);
+			//m_agitator->SetSpeed(1.0);
 			//m_shooter1->Set(1.0);
-			//m_shooter2->Set(1.0);
+			////->Set(1.0);
 
 			if(m_Gamepad->GetXButton())
 			{
@@ -322,7 +354,7 @@ private:
 
 			break;
 		}
-	}
+	}*/
 
 	void operateShift() {
 		if(m_Joystick->GetRawButton(1)) {
@@ -332,6 +364,17 @@ private:
 		else {
 			m_shiftHigh->Set(false);
 			m_shiftLow->Set(true);
+		}
+	}
+
+	void operateGear() {
+		if(m_Gamepad->GetYButton()) {
+			m_gearHoldIn->Set(true);
+			m_gearHoldOut->Set(false);
+		}
+		else if(m_Gamepad->GetXButton()) {
+			m_gearHoldIn->Set(false);
+			m_gearHoldOut->Set(true);
 		}
 	}
 
