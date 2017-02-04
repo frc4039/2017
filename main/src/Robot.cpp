@@ -8,6 +8,7 @@
 #include "CANTalon.h"
 #include "SimPID.h"
 #include "AHRS.h"
+#include "VisionGear.h"
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
 
@@ -40,7 +41,7 @@ private:
 	//VictorSP *m_shooter1;
 	//VictorSP *m_agitator;
 	VictorSP *m_elevate;
-	VictorSP *m_windowMotor;
+	VictorSP *m_intoShooter;
 
 	//Talons
 	CANTalon *m_shooter1;
@@ -94,7 +95,7 @@ private:
 		m_rightDrive2 = new VictorSP(2);
 		m_rightDrive3 = new VictorSP(3);
 		//m_agitator = new VictorSP(4);
-		m_windowMotor = new VictorSP(5);
+		m_intoShooter = new VictorSP(5);
 		m_elevate = new VictorSP(7);
 		m_intake = new VictorSP(9);
 
@@ -164,7 +165,7 @@ private:
 
 	void DisabledPeriodic()
 	{
-		DriverStation::ReportError("Left encoder" + std::to_string((long)m_LeftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_RightEncoder->Get()));
+		DriverStation::ReportError("Left encoder" + std::to_string((long)m_LeftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_RightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
 
 		if(m_Joystick->GetRawButton(1)) {
 			turnSide = 1;
@@ -194,7 +195,7 @@ private:
 			//m_agitator->SetSpeed(0.f);
 			m_intake->SetSpeed(0.f);
 			m_shooter1->Set(0.f);
-			m_windowMotor->SetSpeed(0.f);
+			m_intoShooter->SetSpeed(0.f);
 			break;
 		case 1: //load on right peg
 			switch(autoState) {
@@ -285,7 +286,7 @@ private:
 			//->Set(SHOOTER_RATIO);
 
 			if(agTimer->Get() > 1.0)
-				m_windowMotor->SetSpeed(0.7);
+				m_intoShooter->SetSpeed(0.7);
 
 			DriverStation::ReportError("speed error " + std::to_string(m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM));
 
@@ -298,7 +299,7 @@ private:
 		{
 			m_shooter1->SetSetpoint(0);
 			//->Set(0.f);
-			m_windowMotor->SetSpeed(0.f);
+			m_intoShooter->SetSpeed(0.f);
 			agTimer->Reset();
 			agTimer->Stop();
 		}
