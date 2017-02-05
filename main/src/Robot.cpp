@@ -8,7 +8,7 @@
 #include "CANTalon.h"
 #include "SimPID.h"
 #include "AHRS.h"
-#include "VisionGear.h"
+#include "VisionGearAlpha.h"
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
 
@@ -58,6 +58,9 @@ private:
 	CameraServer *m_gearCam;
 	CameraServer *m_shotCam;
 
+	double last_turn;
+	int aim_attempts;
+
 	//Controllers
 	Joystick *m_Joystick;
 	XboxController *m_Gamepad;
@@ -70,6 +73,7 @@ private:
 	SimPID *speedToPowerPID;
 	SimPID *drivePID;
 	SimPID *turnPID;
+	SimPID *visionPID;
 
 	//LED
 	Relay *m_gearLED;
@@ -125,6 +129,8 @@ private:
 		nav = new AHRS(SPI::Port::kMXP);
 
 		//vision
+		last_turn = 0;
+		aim_attempts = 0;
 
 		//controllers
 		m_Gamepad = new XboxController(1);
@@ -150,6 +156,10 @@ private:
 		turnPID = new SimPID(0, 0, 0);
 		turnPID->setMinDoneCycles(1);
 		turnPID->setMaxOutput(0.3);
+
+		visionPID = new SimPID(0, 0, 0);
+		visionPID->setMinDoneCycles(10);
+		visionPID->setMaxOutput(0.4);
 
 		//Time
 		agTimer = new Timer();
@@ -237,11 +247,11 @@ private:
 	void operateIntake() {
 		if (m_Gamepad->GetRawButton(GP_R)) {
 			m_intake->SetSpeed(1.0);
-			m_elevate->SetSpeed(1.0);
+			m_elevate->SetSpeed(-1.0);
 		}
 		else if(m_Gamepad->GetRawButton(GP_L)) {
 			m_intake->SetSpeed(-1.0);
-			m_elevate->SetSpeed(-1.0);
+			m_elevate->SetSpeed(1.0);
 		}
 		else {
 			m_intake->SetSpeed(0.f);
@@ -379,7 +389,15 @@ private:
 		}
 	}
 
-//=====================AUTO FUNCTIONS=======================
+//=====================VISION FUNCTIONS=====================
+
+	bool aimAtTarget() {
+		float turn = last_turn;
+
+		return 0;
+	}
+
+//=====================AUTO FUNCTIONS=====================
 
 	bool autoDrive(int distance, int angle) {
 		int currentDist = (m_RightEncoder->Get() + m_LeftEncoder->Get()) / 2;
