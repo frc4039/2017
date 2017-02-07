@@ -1,19 +1,13 @@
 #include "VisionGearAlpha.h"
-/**
-* Initializes a VisionGearAlpha.
-*/
 
 namespace grip {
 
 VisionGearAlpha::VisionGearAlpha() {
 }
 /**
-* Runs an iteration of the Pipeline and updates outputs.
-*
-* Sources need to be set before calling this method. 
-*
+* Runs an iteration of the pipeline and updates outputs.
 */
-void VisionGearAlpha::process(cv::Mat source0){
+void VisionGearAlpha::Process(cv::Mat& source0){
 	//Step CV_resize0:
 	//input
 	cv::Mat cvResizeSrc = source0;
@@ -25,9 +19,9 @@ void VisionGearAlpha::process(cv::Mat source0){
 	//Step HSL_Threshold0:
 	//input
 	cv::Mat hslThresholdInput = cvResizeOutput;
-	double hslThresholdHue[] = {0.0, 100.13651877133107};
-	double hslThresholdSaturation[] = {98.60611510791367, 255.0};
-	double hslThresholdLuminance[] = {43.57014388489208, 122.27815699658704};
+	double hslThresholdHue[] = {69.60431654676258, 100.13651877133107};
+	double hslThresholdSaturation[] = {128.41726618705036, 255.0};
+	double hslThresholdLuminance[] = {16.052158273381295, 255.0};
 	hslThreshold(hslThresholdInput, hslThresholdHue, hslThresholdSaturation, hslThresholdLuminance, this->hslThresholdOutput);
 	//Step CV_erode0:
 	//input
@@ -35,7 +29,7 @@ void VisionGearAlpha::process(cv::Mat source0){
 	cv::Mat cvErodeKernel;
 	cv::Point cvErodeAnchor(-1, -1);
 	double cvErodeIterations = 1.0;  // default Double
-    int cvErodeBordertype = cv::BORDER_CONSTANT;
+    int cvErodeBordertype = cv::BORDER_DEFAULT;
 	cv::Scalar cvErodeBordervalue(-1);
 	cvErode(cvErodeSrc, cvErodeKernel, cvErodeAnchor, cvErodeIterations, cvErodeBordertype, cvErodeBordervalue, this->cvErodeOutput);
 	//Step Mask0:
@@ -46,51 +40,45 @@ void VisionGearAlpha::process(cv::Mat source0){
 	//Step Find_Blobs0:
 	//input
 	cv::Mat findBlobsInput = cvErodeOutput;
-	double findBlobsMinArea = 0.0;  // default Double
-	double findBlobsCircularity[] = {0.0, 1.0};
+	double findBlobsMinArea = 1.0;  // default Double
+	double findBlobsCircularity[] = {0.4766187050359712, 0.7440273037542662};
 	bool findBlobsDarkBlobs = false;  // default Boolean
 	findBlobs(findBlobsInput, findBlobsMinArea, findBlobsCircularity, findBlobsDarkBlobs, this->findBlobsOutput);
 }
 
 /**
- * This method is a generated setter for source0.
- * @param source the Mat to set
-/void VisionGearAlpha::setsource0(cv::Mat &source0){
-	source0.copyTo(this->source0);
-}
-
  * This method is a generated getter for the output of a CV_resize.
  * @return Mat output from CV_resize.
  */
-cv::Mat* VisionGearAlpha::getcvResizeOutput(){
+cv::Mat* VisionGearAlpha::GetCvResizeOutput(){
 	return &(this->cvResizeOutput);
 }
 /**
  * This method is a generated getter for the output of a HSL_Threshold.
  * @return Mat output from HSL_Threshold.
  */
-cv::Mat* VisionGearAlpha::gethslThresholdOutput(){
+cv::Mat* VisionGearAlpha::GetHslThresholdOutput(){
 	return &(this->hslThresholdOutput);
 }
 /**
  * This method is a generated getter for the output of a CV_erode.
  * @return Mat output from CV_erode.
  */
-cv::Mat* VisionGearAlpha::getcvErodeOutput(){
+cv::Mat* VisionGearAlpha::GetCvErodeOutput(){
 	return &(this->cvErodeOutput);
 }
 /**
  * This method is a generated getter for the output of a Mask.
  * @return Mat output from Mask.
  */
-cv::Mat* VisionGearAlpha::getmaskOutput(){
+cv::Mat* VisionGearAlpha::GetMaskOutput(){
 	return &(this->maskOutput);
 }
 /**
  * This method is a generated getter for the output of a Find_Blobs.
  * @return BlobsReport output from Find_Blobs.
  */
-std::vector<cv::KeyPoint>* VisionGearAlpha::getfindBlobsOutput(){
+std::vector<cv::KeyPoint>* VisionGearAlpha::GetFindBlobsOutput(){
 	return &(this->findBlobsOutput);
 }
 	/**
