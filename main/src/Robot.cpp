@@ -17,6 +17,8 @@
 #define NATIVE_TO_RPM 0.146484375f
 #define GP_L 5
 #define GP_R 6
+#define DP_UP 0
+#define DP_DOWN 180
 #define SHOOTER_RATIO setPoint/4096
 
 class Robot: public frc::IterativeRobot {
@@ -68,6 +70,8 @@ private:
 	//pneumatics
 	Solenoid *m_shiftHigh, *m_shiftLow;
 	Solenoid *m_gearHoldOut, *m_gearHoldIn;
+	Solenoid *m_gearPropOut, *m_gearPropIn;
+	Solenoid *m_intakeIn, *m_intakeOut;
 
 	//PIDS
 	SimPID *speedToPowerPID;
@@ -141,6 +145,8 @@ private:
 		m_shiftLow = new Solenoid(2);
 		m_gearHoldOut = new Solenoid(3);
 		m_gearHoldIn = new Solenoid(4);
+		m_intakeOut = new Solenoid(5);
+		m_intakeIn = new Solenoid(6);
 
 		//LED
 		m_gearLED = new Relay(0);
@@ -190,8 +196,12 @@ private:
 	void AutonomousInit()
 	{
 		autoState = 0;
+		nav->Reset();
+		m_LeftEncoder->Reset();
+		m_RightEncoder->Reset();
+		m_shooter1->Set(0.f);
 		m_gearLED->Set(Relay::kOn);
-		m_shotLED->Set(Relay::kOn);
+		//m_shotLED->Set(Relay::kOn);
 	}
 
 	void AutonomousPeriodic()
@@ -257,6 +267,14 @@ private:
 			m_intake->SetSpeed(0.f);
 			m_elevate->SetSpeed(0.f);
 		}
+		if(m_Gamepad->GetPOV(DP_UP)) {
+			m_intakeIn->Set(true);
+			m_intakeOut->Set(false);
+		}
+		else if(m_Gamepad->GetPOV(DP_DOWN)){
+			m_intakeOut->Set(true);
+			m_intakeIn->Set(false);
+		}
 	}
 
 	/*void operateShooter()
@@ -317,8 +335,8 @@ private:
 #define PRACTICE_DRIVE_LIMIT 0.65
 
 	inline void teleDrive(void) {
-    float leftSpeed = scale(limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 5), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
-    float rightSpeed = scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 5), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
+    float leftSpeed = scale(limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
+    float rightSpeed = scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
 
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
