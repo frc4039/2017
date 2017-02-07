@@ -15,8 +15,8 @@
 //CONSTANTS
 #define SHOOTER_RPM 4000
 #define NATIVE_TO_RPM 0.146484375f
-#define GP_R 6
 #define GP_L 5
+#define GP_R 6
 #define SHOOTER_RATIO setPoint/4096
 
 class Robot: public frc::IterativeRobot {
@@ -314,10 +314,11 @@ private:
 			agTimer->Stop();
 		}
 	}
+#define PRACTICE_DRIVE_LIMIT 0.65
 
-	void teleDrive() {
-		float leftSpeed = limit(m_Joystick->GetY() - m_Joystick->GetX());
-		float rightSpeed = limit(-m_Joystick->GetY() - m_Joystick->GetX());
+	inline void teleDrive(void) {
+    float leftSpeed = scale(limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 5), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
+    float rightSpeed = scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 5), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
 
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
@@ -391,11 +392,11 @@ private:
 
 //=====================VISION FUNCTIONS=====================
 
-	bool aimAtTarget() {
+	/*bool aimAtTarget() {
 		float turn = last_turn;
 
 		return 0;
-	}
+	}*/
 
 //=====================AUTO FUNCTIONS=====================
 
@@ -426,6 +427,30 @@ private:
 		return s;
 	}
 
+	inline float expo(float x, int n)
+	{
+		int sign = n % 2;
+		float y = 1;
+		for(int i = 1; i <= n; i++)
+		{
+			y *= x;
+		}
+		if(sign == 0 && x < 0)
+			return -y;
+		return y;
+	}
+	inline float limit(float x, float lim)
+	{
+		if(x > lim)
+			return lim;
+		else if(x < -lim)
+			return -lim;
+		return x;
+	}
+	inline float scale(float x, float scale)
+	{
+		return x * scale;
+	}
 };
 
 START_ROBOT_CLASS(Robot)
