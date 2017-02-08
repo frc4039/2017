@@ -8,7 +8,7 @@
 #include "CANTalon.h"
 #include "SimPID.h"
 #include "AHRS.h"
-#include "VisionGearAlpha.h"
+#include "GripPipeline.h"
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
 
@@ -56,10 +56,6 @@ private:
 	//navx
 	AHRS *nav;
 
-	//Vision
-	CameraServer *m_gearCam;
-	CameraServer *m_shotCam;
-
 	double last_turn;
 	int aim_attempts;
 
@@ -86,6 +82,56 @@ private:
 	//Time
 	timeval tv;
 	Timer *agTimer;
+
+	static void VisionThread()
+	{
+		cs::UsbCamera camera = CameraServer::GetInstance()->StartAutomaticCapture();
+		camera.SetResolution(640,480);
+		// camera.SetExposureAuto();
+		camera.SetExposureManual(10);
+		camera.SetBrightness(65);
+		camera.SetFPS(10);
+		camera.SetWhiteBalanceAuto();
+
+		cs::CvSink cvSink = CameraServer::GetInstance()->GetVideo();
+		cs::CvSource outputStreamStd = CameraServer::GetInstance()->PutVideo("Pipeline", 640, 480);
+		cv::Mat source;
+		cv::Mat output;
+		grip::GripPipeline grip;
+		cv::RNG rng(12345);
+		cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+		std::vector<std::vector<cv::Point>> contours;
+		std::vector<cv::Rect> r;
+
+		while(true)
+		{
+			cvSink.GrabFrame(source);
+			grip.Process(source);
+			output = *grip.GetRgbThresholdOutput();
+
+			contours = *grip.GetFilterContoursOutput();
+			r.resize(contours.size());
+
+			for (unsigned int i = 0; i < contours.size(); i ++){
+				r[i] = cv::boundingRect(contours[i]);
+
+/*
+			cv::drawContours(output,
+					contours,
+					i,
+					color,
+					1,
+					8,
+					std::vector<cv::Vec4i>(),
+					0,
+					cv::Point());
+					*/
+			}
+
+			// cvtColor(source, output, cv::COLOR_BGR2GRAY);
+			outputStreamStd.PutFrame(output);
+		}
+	}
 
 	void RobotInit(void) override
 	{
@@ -133,6 +179,10 @@ private:
 		nav = new AHRS(SPI::Port::kMXP);
 
 		//vision
+		std::thread visionThread(VisionThread);
+		visionThread.detach();
+
+
 		last_turn = 0;
 		aim_attempts = 0;
 
