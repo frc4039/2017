@@ -23,17 +23,26 @@ namespace grip {
 */
 class GripPipeline : public frc::VisionPipeline {
 	private:
-		cv::Mat rgbThresholdOutput;
+		cv::Mat cvResizeOutput;
+		cv::Mat hslThresholdOutput;
+		cv::Mat cvErodeOutput;
+		cv::Mat maskOutput;
 		std::vector<std::vector<cv::Point> > findContoursOutput;
 		std::vector<std::vector<cv::Point> > filterContoursOutput;
-		void rgbThreshold(cv::Mat &, double [], double [], double [], cv::Mat &);
+		void cvResize(cv::Mat &, cv::Size &, double , double , int , cv::Mat &);
+		void hslThreshold(cv::Mat &, double [], double [], double [], cv::Mat &);
+		void cvErode(cv::Mat &, cv::Mat &, cv::Point &, double , int , cv::Scalar &, cv::Mat &);
+		void mask(cv::Mat &, cv::Mat &, cv::Mat &);
 		void findContours(cv::Mat &, bool , std::vector<std::vector<cv::Point> > &);
 		void filterContours(std::vector<std::vector<cv::Point> > &, double , double , double , double , double , double , double [], double , double , double , double , std::vector<std::vector<cv::Point> > &);
 
 	public:
 		GripPipeline();
 		void Process(cv::Mat& source0) override;
-		cv::Mat* GetRgbThresholdOutput();
+		cv::Mat* GetCvResizeOutput();
+		cv::Mat* GetHslThresholdOutput();
+		cv::Mat* GetCvErodeOutput();
+		cv::Mat* GetMaskOutput();
 		std::vector<std::vector<cv::Point> >* GetFindContoursOutput();
 		std::vector<std::vector<cv::Point> >* GetFilterContoursOutput();
 };
