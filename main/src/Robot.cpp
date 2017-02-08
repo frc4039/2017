@@ -86,7 +86,7 @@ private:
 	static void VisionThread()
 	{
 		cs::UsbCamera camera = CameraServer::GetInstance()->StartAutomaticCapture();
-		camera.SetResolution(640,480);
+		camera.SetResolution(160,120);
 		// camera.SetExposureAuto();
 		camera.SetExposureManual(10);
 		camera.SetBrightness(65);
@@ -102,21 +102,23 @@ private:
 		cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
 		std::vector<std::vector<cv::Point>> contours;
 		std::vector<cv::Rect> r;
+		cv::Mat drawing;
 
 		while(true)
 		{
 			cvSink.GrabFrame(source);
 			grip.Process(source);
-			output = *grip.GetRgbThresholdOutput();
-
+			output = *grip.GetHslThresholdOutput();
+			drawing = cv::Mat::zeros( source.size(), CV_8UC3 );
 			contours = *grip.GetFilterContoursOutput();
 			r.resize(contours.size());
+			printf("contour size: %d\n", contours.size());
 
 			for (unsigned int i = 0; i < contours.size(); i ++){
 				r[i] = cv::boundingRect(contours[i]);
 
-/*
-			cv::drawContours(output,
+
+			cv::drawContours(drawing,
 					contours,
 					i,
 					color,
@@ -125,11 +127,11 @@ private:
 					std::vector<cv::Vec4i>(),
 					0,
 					cv::Point());
-					*/
+
 			}
 
 			// cvtColor(source, output, cv::COLOR_BGR2GRAY);
-			outputStreamStd.PutFrame(output);
+			outputStreamStd.PutFrame(drawing);
 		}
 	}
 
