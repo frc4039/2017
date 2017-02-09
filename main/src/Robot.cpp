@@ -387,8 +387,8 @@ private:
 #define PRACTICE_DRIVE_LIMIT 0.65
 
 	inline void teleDrive(void) {
-    float leftSpeed = scale(limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
-    float rightSpeed = scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
+		float leftSpeed = scale(limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
+    	float rightSpeed = scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
 
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
@@ -480,22 +480,22 @@ private:
 		float drive = -drivePID->calcPID(currentDist);
 		float turn = -turnPID->calcPID(currentAngle);
 
-		m_leftDrive0->SetSpeed(limit(drive + turn));
-		m_leftDrive1->SetSpeed(limit(drive + turn));
-		m_rightDrive2->SetSpeed(-limit(drive - turn));
-		m_rightDrive3->SetSpeed(-limit(drive - turn));
+		m_leftDrive0->SetSpeed(limit(drive + turn, 1));
+		m_leftDrive1->SetSpeed(limit(drive + turn, 1));
+		m_rightDrive2->SetSpeed(-limit(drive - turn, 1));
+		m_rightDrive3->SetSpeed(-limit(drive - turn, 1));
 
 		return drivePID->isDone() && turnPID->isDone();
 	}
 
 //=======================MATHY FUNCTIONS============================
-	float limit(float s) {
+	/*float limit(float s) {
 		if (s > 1)
 			return 1;
 		else if (s < -1)
 			return -1;
 		return s;
-	}
+	}*/
 
 	inline float expo(float x, int n)
 	{
@@ -509,6 +509,7 @@ private:
 			return -y;
 		return y;
 	}
+
 	inline float limit(float x, float lim)
 	{
 		if(x > lim)
@@ -517,6 +518,7 @@ private:
 			return -lim;
 		return x;
 	}
+
 	inline float scale(float x, float scale)
 	{
 		return x * scale;
