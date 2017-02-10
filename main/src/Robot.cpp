@@ -99,10 +99,15 @@ private:
 		cv::Mat output;
 		grip::GripPipeline grip;
 		cv::RNG rng(12345);
-		cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+		cv::Scalar color1 = cv::Scalar( 255,255,255 );
+		cv::Scalar color2 = cv::Scalar( 0,255,0 );
+		cv::Scalar color3 = cv::Scalar( 255,0,0 );
 		std::vector<std::vector<cv::Point>> contours;
 		std::vector<cv::Rect> r;
 		cv::Mat drawing;
+		char vBuffer[50];
+		std::ofstream vFile;
+		vFile.open("/home/lvuser/vision.csv", std::ios::out);
 
 		while(true)
 		{
@@ -112,26 +117,37 @@ private:
 			drawing = cv::Mat::zeros( source.size(), CV_8UC3 );
 			contours = *grip.GetFilterContoursOutput();
 			r.resize(contours.size());
-			printf("contour size: %d\n", contours.size());
+			//printf("contour size: %d\n", contours.size());
 
 			for (unsigned int i = 0; i < contours.size(); i ++){
 				r[i] = cv::boundingRect(contours[i]);
 
-
-			cv::drawContours(drawing,
+				cv::drawContours(drawing,
 					contours,
 					i,
-					color,
+					color1,
 					1,
 					8,
 					std::vector<cv::Vec4i>(),
 					0,
 					cv::Point());
 
+				rectangle( drawing, r[i].tl(), r[i].br(), color2, 1, cv::LINE_4, 0 );
+				//printf("c: %d\tL: %d\tR: %d\n", center, leftHeight, rightHeight);
+				//sprintf(vBuffer, "c:%d\tL:%d\tR:%d\n", center, leftHeight, rightHeight);
+				//vFile << vBuffer;
 			}
+			if(contours.size() >= 2){
+				int leftT  = (r[0].x < r[1].x) ? 0 : 1;
+				int rightT = (leftT == 1) ? 0 : 1;
+				int center 		= r[leftT].x + r[leftT].width + (abs( r[leftT].x + r[leftT].width - r[rightT].x ) >> 1);
+				int leftHeight	= r[leftT].height;
+				int rightHeight	= r[rightT].height;
 
-			// cvtColor(source, output, cv::COLOR_BGR2GRAY);
+				circle( drawing, cv::Point(center, r[leftT].y+(r[leftT].height >> 1)), abs(leftHeight - rightHeight), color3, 1, cv::LINE_4, 0 );
+			}
 			outputStreamStd.PutFrame(drawing);
+			//std::this_thread::__sleep_for(std::chrono::seconds(0), std::chrono::milliseconds(250));
 		}
 	}
 
@@ -181,8 +197,8 @@ private:
 		nav = new AHRS(SPI::Port::kMXP);
 
 		//vision
-		std::thread visionThread(VisionThread);
-		visionThread.detach();
+		//std::thread visionThread(VisionThread);
+		//visionThread.detach();
 
 
 		last_turn = 0;
@@ -370,8 +386,8 @@ private:
 
 			DriverStation::ReportError("speed error " + std::to_string(m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM));
 
-			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM);
-			file << buffer;
+			//sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM);
+			//file << buffer;
 
 			fileCount++;
 		}
