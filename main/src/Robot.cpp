@@ -50,8 +50,8 @@ private:
 	//CANTalon *//;
 
 	//Encoders
-	Encoder *m_LeftEncoder;
-	Encoder *m_RightEncoder;
+	Encoder *m_leftEncoder;
+	Encoder *m_rightEncoder;
 
 	//navx
 	AHRS *nav;
@@ -167,9 +167,9 @@ private:
 		m_rightDrive2 = new VictorSP(2);
 		m_rightDrive3 = new VictorSP(3);
 		//m_agitator = new VictorSP(4);
-		m_intoShooter = new VictorSP(5);
-		m_elevate = new VictorSP(7);
-		m_intake = new VictorSP(9);
+		m_intoShooter = new VictorSP(6);
+		m_elevate = new VictorSP(5);
+		m_intake = new VictorSP(4);
 
 		//m_shooter1 = new VictorSP(8);
 
@@ -190,8 +190,8 @@ private:
 	//	m_shooter12 = new CANTalon(1);
 
 		//encoders
-		m_LeftEncoder = new Encoder(0,1);
-		m_RightEncoder = new Encoder(2,3);
+		m_leftEncoder = new Encoder(0,1);
+		m_rightEncoder = new Encoder(2,3);
 
 		//navx
 		nav = new AHRS(SPI::Port::kMXP);
@@ -249,7 +249,7 @@ private:
 
 	void DisabledPeriodic()
 	{
-		DriverStation::ReportError("Left encoder" + std::to_string((long)m_LeftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_RightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
+		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
 
 		if(m_Joystick->GetRawButton(1)) {
 			turnSide = 1;
@@ -265,8 +265,8 @@ private:
 	{
 		autoState = 0;
 		nav->Reset();
-		m_LeftEncoder->Reset();
-		m_RightEncoder->Reset();
+		m_leftEncoder->Reset();
+		m_rightEncoder->Reset();
 		m_shooter1->Set(0.f);
 		m_gearLED->Set(Relay::kOn);
 		//m_shotLED->Set(Relay::kOn);
@@ -487,7 +487,7 @@ private:
 //=====================AUTO FUNCTIONS=====================
 
 	bool autoDrive(int distance, int angle) {
-		int currentDist = (m_RightEncoder->Get() + m_LeftEncoder->Get()) / 2;
+		int currentDist = (m_rightEncoder->Get() + m_leftEncoder->Get()) / 2;
 		int currentAngle = nav->GetYaw();
 
 		drivePID->setDesiredValue(distance);
