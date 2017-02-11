@@ -20,6 +20,7 @@
 #define DP_UP 0
 #define DP_DOWN 180
 #define SHOOTER_RATIO setPoint/4096
+//#define PRACTICE_BOT
 
 class Robot: public frc::IterativeRobot {
 private:
@@ -159,13 +160,18 @@ private:
 		autoMode = 0;
 		turnSide = 1;
 
-		file.open("/home/lvuser/pid.csv", std::ios::out);
+		//file.open("/home/lvuser/pid.csv", std::ios::out);
 
 		//Victors
 		m_leftDrive0 = new VictorSP(0);
+		m_leftDrive0->SetSafetyEnabled(true);
 		m_leftDrive1 = new VictorSP(1);
+		m_leftDrive1->SetSafetyEnabled(true);
 		m_rightDrive2 = new VictorSP(2);
+		m_rightDrive2->SetSafetyEnabled(true);
 		m_rightDrive3 = new VictorSP(3);
+		m_rightDrive3->SetSafetyEnabled(true);
+
 		//m_agitator = new VictorSP(4);
 		m_intoShooter = new VictorSP(6);
 		m_elevate = new VictorSP(5);
@@ -209,10 +215,15 @@ private:
 		m_Joystick = new Joystick(0);
 
 		//pneumatics
+#ifdef PRACTICE_BOT
 		m_shiftHigh = new Solenoid(1);
 		m_shiftLow = new Solenoid(2);
-		m_gearHoldOut = new Solenoid(3);
-		m_gearHoldIn = new Solenoid(4);
+#else
+		m_shiftHigh = new Solenoid(0);
+		m_shiftLow = new Solenoid(1);
+#endif
+		m_gearHoldOut = new Solenoid(2);
+		m_gearHoldIn = new Solenoid(3);
 		m_intakeOut = new Solenoid(5);
 		m_intakeIn = new Solenoid(6);
 
@@ -311,7 +322,7 @@ private:
 		teleDrive();
 		//operateShooter();
 		//trim();
-		ShooterPID();
+		//ShooterPID();
 		operateShift();
 		operateGear();
 	}
@@ -400,11 +411,11 @@ private:
 			agTimer->Stop();
 		}
 	}
-#define PRACTICE_DRIVE_LIMIT 0.65
+#define PRACTICE_DRIVE_LIMIT 1
 
 	inline void teleDrive(void) {
-		float leftSpeed = scale(limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
-    	float rightSpeed = scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.75f), PRACTICE_DRIVE_LIMIT);
+		float leftSpeed = scale(limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+    	float rightSpeed = scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
 
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
