@@ -20,6 +20,7 @@
 #define DP_UP 0
 #define DP_DOWN 180
 #define SHOOTER_RATIO setPoint/4096
+#define INCHES_TO_ENCODERS 1245/12
 //#define PRACTICE_BOT
 
 class Robot: public frc::IterativeRobot {
@@ -30,6 +31,7 @@ private:
 	int autoMode;
 	int autoState;
 	int turnSide;
+	int climbState;
 
 	char buffer[50];
 	std::ofstream file;
@@ -48,6 +50,7 @@ private:
 
 	//Talons
 	CANTalon *m_shooter1;
+	CANTalon *m_climber;
 	//CANTalon *//;
 
 	//Encoders
@@ -159,6 +162,7 @@ private:
 		fileCount = 1;
 		autoMode = 0;
 		turnSide = 1;
+		climbState = 0;
 
 		//file.open("/home/lvuser/pid.csv", std::ios::out);
 
@@ -190,6 +194,16 @@ private:
 		m_shooter1->SetAllowableClosedLoopErr(0);
 		m_shooter1->SelectProfileSlot(0);
 
+		m_climber = new CANTalon(2);
+		m_climber->SetControlMode(CANSpeedController::kSpeed);
+		m_climber->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
+		m_climber->ConfigEncoderCodesPerRev(4096);
+		m_climber->SetSensorDirection(true);
+		m_climber->SetPID(0, 0, 0, 0);
+		m_climber->SetCloseLoopRampRate(0);
+		m_climber->SetAllowableClosedLoopErr(0);
+		m_climber->SelectProfileSlot(0);
+
 		// = new CANTalon(2);
 		//->SetControlMode(CANSpeedController::kSpeed);
 
@@ -200,7 +214,11 @@ private:
 		m_rightEncoder = new Encoder(2,3);
 
 		//navx
+#ifndef PRACTICE_BOT
 		nav = new AHRS(SPI::Port::kMXP);
+#else
+		nav = new AHRS(I2C::Port::kOnboard);
+#endif
 
 		//vision
 		//std::thread visionThread(VisionThread);
@@ -322,7 +340,7 @@ private:
 		teleDrive();
 		//operateShooter();
 		//trim();
-		//ShooterPID();
+		ShooterPID();
 		operateShift();
 		operateGear();
 	}
@@ -346,14 +364,14 @@ private:
 			m_intake->SetSpeed(0.f);
 			m_elevate->SetSpeed(0.f);
 		}
-		if(m_Gamepad->GetPOV(DP_UP)) {
+		/*if(m_Gamepad->GetPOV(DP_UP)) {
 			m_intakeIn->Set(true);
 			m_intakeOut->Set(false);
 		}
 		else if(m_Gamepad->GetPOV(DP_DOWN)){
 			m_intakeOut->Set(true);
 			m_intakeIn->Set(false);
-		}
+		}*/
 	}
 
 	/*void operateShooter()
@@ -379,7 +397,7 @@ private:
 	void ShooterPID() {
 
 		//int setPoint = 1500 * (0.5 * m_Joystick->GetRawAxis(2) + 0.5) + 3000;
-		int setPoint = 3800;
+		int setPoint = -3800;
 		gettimeofday(&tv, 0);
 
 		float encoderRPM = m_shooter1->GetSpeed();
@@ -393,7 +411,7 @@ private:
 			//->Set(SHOOTER_RATIO);
 
 			if(agTimer->Get() > 1.0)
-				m_intoShooter->SetSpeed(0.7);
+				m_intoShooter->SetSpeed(0.5);
 
 			DriverStation::ReportError("speed error " + std::to_string(m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM));
 
@@ -401,6 +419,10 @@ private:
 			//file << buffer;
 
 			fileCount++;
+		}
+		else if(m_Gamepad->GetBButton()) {
+			m_shooter1->SetSetpoint(SHOOTER_RPM * 0.2);
+			m_intoShooter->SetSpeed(-0.2);
 		}
 		else
 		{
@@ -485,6 +507,18 @@ private:
 			m_gearHoldIn->Set(false);
 			m_gearHoldOut->Set(true);
 		}
+	}
+
+	void advancedClimb() {
+		if(m_Gamepad->GetPOV(DP_UP)) {
+			m_climber->Set(1.0);
+			if(m_climber->GetEncVel() < 0)
+				m_climber->Set(0.5);
+		}
+		else if(m_Gamepad->GetPOV(DP_UP))
+			m_climber->Set(-1.0);
+		else
+			m_climber->Set(0.f);
 	}
 
 //=====================VISION FUNCTIONS=====================
