@@ -19,8 +19,10 @@
 #define GP_R 6
 #define DP_UP 0
 #define DP_DOWN 180
-#define SHOOTER_RATIO setPoint/4096
 #define INCHES_TO_ENCODERS 1245/12
+#define MIDDLE_PEG_INCHES 69.3
+#define INTAKE_SPEED 0.6
+#define CLIMB_SPEED 80
 //#define PRACTICE_BOT
 
 class Robot: public frc::IterativeRobot {
@@ -45,11 +47,12 @@ private:
 	VictorSP *m_intake;
 	//VictorSP *m_shooter1;
 	//VictorSP *m_agitator;
-	VictorSP *m_elevate;
+	//VictorSP *m_elevate;
 	VictorSP *m_intoShooter;
 
 	//Talons
 	CANTalon *m_shooter1;
+	CANTalon *m_shooter2;
 	CANTalon *m_climber;
 	//CANTalon *//;
 
@@ -86,6 +89,8 @@ private:
 	//Time
 	timeval tv;
 	Timer *agTimer;
+	Timer *autoTimer;
+	Timer *climbTimer;
 
 	static void VisionThread()
 	{
@@ -109,7 +114,7 @@ private:
 		std::vector<std::vector<cv::Point>> contours;
 		std::vector<cv::Rect> r;
 		cv::Mat drawing;
-		char vBuffer[50];
+		//char vBuffer[50];
 		std::ofstream vFile;
 		vFile.open("/home/lvuser/vision.csv", std::ios::out);
 
@@ -178,7 +183,7 @@ private:
 
 		//m_agitator = new VictorSP(4);
 		m_intoShooter = new VictorSP(6);
-		m_elevate = new VictorSP(5);
+		//m_elevate = new VictorSP(5);
 		m_intake = new VictorSP(4);
 
 		//m_shooter1 = new VictorSP(8);
@@ -194,12 +199,16 @@ private:
 		m_shooter1->SetAllowableClosedLoopErr(0);
 		m_shooter1->SelectProfileSlot(0);
 
+		m_shooter2 = new CANTalon(3);
+		m_shooter2->SetControlMode(CANSpeedController::kFollower);
+		m_shooter2->Set(1);
+
 		m_climber = new CANTalon(2);
 		m_climber->SetControlMode(CANSpeedController::kSpeed);
 		m_climber->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
 		m_climber->ConfigEncoderCodesPerRev(4096);
-		m_climber->SetSensorDirection(true);
-		m_climber->SetPID(0, 0, 0, 0);
+		m_climber->SetSensorDirection(false);
+		m_climber->SetPID(0, 0, 0, 2);
 		m_climber->SetCloseLoopRampRate(0);
 		m_climber->SetAllowableClosedLoopErr(0);
 		m_climber->SelectProfileSlot(0);
@@ -268,6 +277,14 @@ private:
 		agTimer = new Timer();
 		agTimer->Reset();
 		agTimer->Stop();
+
+		autoTimer = new Timer();
+		autoTimer->Reset();
+		autoTimer->Stop();
+
+		climbTimer = new Timer();
+		climbTimer->Reset();
+		climbTimer->Stop();
 	}
 
 	void DisabledInit()
@@ -298,6 +315,7 @@ private:
 		m_rightEncoder->Reset();
 		m_shooter1->Set(0.f);
 		m_gearLED->Set(Relay::kOn);
+		autoTimer->Reset();
 		//m_shotLED->Set(Relay::kOn);
 	}
 
@@ -314,13 +332,30 @@ private:
 			m_shooter1->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
 			break;
-		case 1: //load on right peg
+		case 1: //load on middle peg, temporary auto for practice bot
 			switch(autoState) {
-			case 0:
+			case 0: //init
+				m_leftDrive0->SetSpeed(0.f);
+				m_leftDrive1->SetSpeed(0.f);
+				m_rightDrive2->SetSpeed(0.f);
+				m_rightDrive3->SetSpeed(0.f);
+				m_intake->SetSpeed(0.f);
+				m_shooter1->Set(0.f);
+				m_intoShooter->SetSpeed(0.f);
 				autoState++;
 				break;
-			case 1:
-
+			case 1: //drive to peg
+				m_gearHoldOut->Set(false);
+				m_gearHoldIn->Set(true);
+				if(autoDrive(MIDDLE_PEG_INCHES * INCHES_TO_ENCODERS, 0)) {
+					autoTimer->Start();
+					autoState++;
+				}
+				break;
+			case 2: //rest, wait for peg lift, drive back
+				if(autoTimer->Get() > 8.0) {
+					autoDrive(-1000, 0);
+				}
 				break;
 			}
 			break;
@@ -343,6 +378,8 @@ private:
 		ShooterPID();
 		operateShift();
 		operateGear();
+		advancedClimb();
+		//  WHY();
 	}
 
 	void TestPeriodic() {
@@ -352,17 +389,17 @@ private:
 //=====================TELEOP FUNCTIONS=======================
 
 	void operateIntake() {
-		if (m_Gamepad->GetRawButton(GP_R)) {
-			m_intake->SetSpeed(1.0);
-			m_elevate->SetSpeed(-1.0);
+		if (m_Gamepad->GetRawButton(GP_L)) {
+			m_intake->SetSpeed(INTAKE_SPEED);
+			//m_elevate->SetSpeed(-INTAKE_SPEED);
 		}
-		else if(m_Gamepad->GetRawButton(GP_L)) {
-			m_intake->SetSpeed(-1.0);
-			m_elevate->SetSpeed(1.0);
+		else if(m_Gamepad->GetRawButton(GP_R)) {
+			m_intake->SetSpeed(-INTAKE_SPEED);
+			//m_elevate->SetSpeed(INTAKE_SPEED);
 		}
 		else {
 			m_intake->SetSpeed(0.f);
-			m_elevate->SetSpeed(0.f);
+			//m_elevate->SetSpeed(0.f);
 		}
 		/*if(m_Gamepad->GetPOV(DP_UP)) {
 			m_intakeIn->Set(true);
@@ -396,22 +433,20 @@ private:
 
 	void ShooterPID() {
 
-		//int setPoint = 1500 * (0.5 * m_Joystick->GetRawAxis(2) + 0.5) + 3000;
-		int setPoint = -3800;
+		int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(2) + 0.5) + 3000);
+		//int setPoint = 2900;
 		gettimeofday(&tv, 0);
 
 		float encoderRPM = m_shooter1->GetSpeed();
 		DriverStation::ReportError("setpoint: "+ std::to_string(setPoint) + "Encoder speed" + std::to_string((long)encoderRPM));
 
-
-
 		if(m_Gamepad->GetAButton()) {
-			agTimer->Start();
-			m_shooter1->SetSetpoint(setPoint);
+			//agTimer->Start();
+			m_shooter1->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			if(agTimer->Get() > 1.0)
-				m_intoShooter->SetSpeed(0.5);
+			//if(agTimer->Get() > 1.0)
+				//m_intoShooter->SetSpeed(0.5);
 
 			DriverStation::ReportError("speed error " + std::to_string(m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM));
 
@@ -420,19 +455,41 @@ private:
 
 			fileCount++;
 		}
-		else if(m_Gamepad->GetBButton()) {
-			m_shooter1->SetSetpoint(SHOOTER_RPM * 0.2);
-			m_intoShooter->SetSpeed(-0.2);
+		else if(m_Gamepad->GetStartButton()) {
+			m_shooter1->Set(0.2 * SHOOTER_RPM);
+			//m_intoShooter->SetSpeed(-0.2);
 		}
 		else
 		{
-			m_shooter1->SetSetpoint(0);
+			m_shooter1->Set(0.f);
 			//->Set(0.f);
-			m_intoShooter->SetSpeed(0.f);
-			agTimer->Reset();
-			agTimer->Stop();
+			//m_intoShooter->SetSpeed(0.f);
+			//agTimer->Reset();
+			//agTimer->Stop();
 		}
+
+		if(m_Gamepad->GetBButton()){
+			m_intoShooter->SetSpeed(0.5);
+		}
+		else if (!m_Gamepad->GetStartButton()){
+			m_intoShooter->SetSpeed(0.f);
+		}
+
 	}
+	/*void WHY() {
+		if(m_Gamepad->GetAButton()) {
+			m_shooter1->Set(0.30);
+		}
+		else  {
+			m_shooter1->Set(0.f);
+		}
+		//else if(m_Gamepad->GetBButton()) {
+		//	m_intoShooter->SetSpeed(0.5);
+		//}
+		//else {
+			//m_shooter1->SetSpeed(0.f);
+		//}
+	}*/
 #define PRACTICE_DRIVE_LIMIT 1
 
 	inline void teleDrive(void) {
@@ -510,13 +567,14 @@ private:
 	}
 
 	void advancedClimb() {
-		if(m_Gamepad->GetPOV(DP_UP)) {
-			m_climber->Set(1.0);
-			if(m_climber->GetEncVel() < 0)
-				m_climber->Set(0.5);
+		//printf("climb error: %d\n", m_climber->GetClosedLoopError()*NATIVE_TO_RPM);
+		if(m_Gamepad->GetPOV(0) == DP_UP) {
+			m_climber->Set(CLIMB_SPEED);
+			if(m_climber->GetSpeed() < 10)
+				m_climber->Set(0.f);
 		}
-		else if(m_Gamepad->GetPOV(DP_UP))
-			m_climber->Set(-1.0);
+		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
+			m_climber->Set(-CLIMB_SPEED);
 		else
 			m_climber->Set(0.f);
 	}
