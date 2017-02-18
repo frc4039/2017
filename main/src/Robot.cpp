@@ -116,7 +116,7 @@ private:
 		cv::Mat drawing;
 		//char vBuffer[50];
 		std::ofstream vFile;
-		vFile.open("/home/lvuser/vision.csv", std::ios::out);
+		//vFile.open("/home/lvuser/vision.csv", std::ios::out);
 
 		while(true)
 		{
@@ -169,7 +169,7 @@ private:
 		turnSide = 1;
 		climbState = 0;
 
-		//file.open("/home/lvuser/pid.csv", std::ios::out);
+		file.open("/home/lvuser/pid.csv", std::ios::out);
 
 		//Victors
 		m_leftDrive0 = new VictorSP(0);
@@ -194,8 +194,9 @@ private:
 		m_shooter1->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
 		m_shooter1->ConfigEncoderCodesPerRev(4096);
 		m_shooter1->SetSensorDirection(true);
-		m_shooter1->SetPID(0.015, 0, 0.1, 0.0325);
+		m_shooter1->SetPID(0.04, 0, 0.4, 0.0325);
 		m_shooter1->SetCloseLoopRampRate(2);
+		//m_shooter1->SetVoltageRampRate(2);
 		m_shooter1->SetAllowableClosedLoopErr(0);
 		m_shooter1->SelectProfileSlot(0);
 
@@ -433,8 +434,8 @@ private:
 
 	void ShooterPID() {
 
-		int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 3000);
-		//int setPoint = 2900;
+		//int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 3000);
+		int setPoint = -3200;
 		gettimeofday(&tv, 0);
 
 		float encoderRPM = m_shooter1->GetSpeed();
@@ -450,8 +451,8 @@ private:
 
 			DriverStation::ReportError("speed error " + std::to_string(m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM));
 
-			//sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM);
-			//file << buffer;
+			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM);
+			file << buffer;
 
 			fileCount++;
 		}
@@ -493,8 +494,8 @@ private:
 #define PRACTICE_DRIVE_LIMIT 1
 
 	inline void teleDrive(void) {
-		float leftSpeed = scale(limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-    	float rightSpeed = scale(-limit(expo(m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+    	float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
 
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
@@ -570,8 +571,8 @@ private:
 		//printf("climb error: %d\n", m_climber->GetClosedLoopError()*NATIVE_TO_RPM);
 		if(m_Gamepad->GetPOV(0) == DP_UP) {
 			m_climber->Set(CLIMB_SPEED);
-			if(m_climber->GetSpeed() < 10)
-				m_climber->Set(0.f);
+			//if(m_climber->GetSpeed() < 10)
+				//m_climber->Set(0.f);
 		}
 		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
 			m_climber->Set(-CLIMB_SPEED);
