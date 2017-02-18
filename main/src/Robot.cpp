@@ -21,7 +21,7 @@
 #define DP_DOWN 180
 #define INCHES_TO_ENCODERS 1245/12
 #define MIDDLE_PEG_INCHES 69.3
-#define INTAKE_SPEED 0.6
+#define INTAKE_SPEED 1.0 //0.6
 #define CLIMB_SPEED 80
 //#define PRACTICE_BOT
 
@@ -194,8 +194,8 @@ private:
 		m_shooter1->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
 		m_shooter1->ConfigEncoderCodesPerRev(4096);
 		m_shooter1->SetSensorDirection(true);
-		m_shooter1->SetPID(0.01, 0, 0.1, 0.028);
-		m_shooter1->SetCloseLoopRampRate(0);
+		m_shooter1->SetPID(0.015, 0, 0.1, 0.0325);
+		m_shooter1->SetCloseLoopRampRate(2);
 		m_shooter1->SetAllowableClosedLoopErr(0);
 		m_shooter1->SelectProfileSlot(0);
 
@@ -433,7 +433,7 @@ private:
 
 	void ShooterPID() {
 
-		int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(2) + 0.5) + 3000);
+		int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 3000);
 		//int setPoint = 2900;
 		gettimeofday(&tv, 0);
 
@@ -456,8 +456,8 @@ private:
 			fileCount++;
 		}
 		else if(m_Gamepad->GetStartButton()) {
-			m_shooter1->Set(0.2 * SHOOTER_RPM);
-			//m_intoShooter->SetSpeed(-0.2);
+			m_shooter1->Set(0.3 * SHOOTER_RPM);
+			m_intoShooter->SetSpeed(-0.2);
 		}
 		else
 		{
