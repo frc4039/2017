@@ -4,6 +4,9 @@
 #include <ctime>
 //#include <time.h>
 #include <fstream>
+#include <thread>
+#include <list>
+#include <mutex>
 #include "WPILib.h"
 #include "CANTalon.h"
 #include "SimPID.h"
@@ -35,6 +38,18 @@ private:
 	int turnSide;
 	int climbState;
 
+	/*int leftT;
+	int rightT;
+	int center;
+	int leftHeight;
+	int rightHeight;*/
+
+	/*std::list<int>myList;
+	std::mutex myMutex;
+	void addToList(int a, int b, int c, i) {
+
+	}*/
+
 	char buffer[50];
 	std::ofstream file;
 
@@ -51,8 +66,8 @@ private:
 	VictorSP *m_intoShooter;
 
 	//Talons
-	CANTalon *m_shooter1;
-	CANTalon *m_shooter2;
+	CANTalon *m_shooterB;
+	CANTalon *m_shooterA;
 	CANTalon *m_climber;
 	//CANTalon *//;
 
@@ -75,7 +90,7 @@ private:
 	Solenoid *m_gearHoldOut, *m_gearHoldIn;
 	Solenoid *m_gearPropOut, *m_gearPropIn;
 	Solenoid *m_intakeIn, *m_intakeOut;
-
+	Solenoid *m_introducerIn, *m_introducerOut;
 	//PIDS
 	SimPID *speedToPowerPID;
 	SimPID *drivePID;
@@ -92,7 +107,7 @@ private:
 	Timer *autoTimer;
 	Timer *climbTimer;
 
-	static void VisionThread()
+	static int VisionThread()
 	{
 		cs::UsbCamera camera = CameraServer::GetInstance()->StartAutomaticCapture();
 		camera.SetResolution(160,120);
@@ -146,10 +161,11 @@ private:
 				//sprintf(vBuffer, "c:%d\tL:%d\tR:%d\n", center, leftHeight, rightHeight);
 				//vFile << vBuffer;
 			}
+			int center = -1;
 			if(contours.size() >= 2){
 				int leftT  = (r[0].x < r[1].x) ? 0 : 1;
 				int rightT = (leftT == 1) ? 0 : 1;
-				int center 		= r[leftT].x + r[leftT].width + (abs( r[leftT].x + r[leftT].width - r[rightT].x ) >> 1);
+				center 		= r[leftT].x + r[leftT].width + (abs( r[leftT].x + r[leftT].width - r[rightT].x ) >> 1);
 				int leftHeight	= r[leftT].height;
 				int rightHeight	= r[rightT].height;
 
@@ -158,6 +174,7 @@ private:
 			outputStreamStd.PutFrame(drawing);
 			//std::this_thread::__sleep_for(std::chrono::seconds(0), std::chrono::milliseconds(250));
 		}
+		//	return center;
 	}
 
 	void RobotInit(void) override
@@ -189,20 +206,20 @@ private:
 		//m_shooter1 = new VictorSP(8);
 
 		//Talons
-		m_shooter1 = new CANTalon(1);
-		m_shooter1->SetControlMode(CANSpeedController::kSpeed);
-		m_shooter1->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
-		m_shooter1->ConfigEncoderCodesPerRev(4096);
-		m_shooter1->SetSensorDirection(true);
-		m_shooter1->SetPID(0.04, 0, 0.4, 0.0325);
-		m_shooter1->SetCloseLoopRampRate(2);
-		//m_shooter1->SetVoltageRampRate(2);
-		m_shooter1->SetAllowableClosedLoopErr(0);
-		m_shooter1->SelectProfileSlot(0);
+		m_shooterB = new CANTalon(1);
+		m_shooterB->SetControlMode(CANSpeedController::kSpeed);
+		m_shooterB->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
+		m_shooterB->ConfigEncoderCodesPerRev(4096);
+		m_shooterB->SetSensorDirection(true);
+		m_shooterB->SetPID(0.04, 0, 0.4, 0.0325);
+		m_shooterB->SetCloseLoopRampRate(1);
+		m_shooterB->SetVoltageRampRate(1);
+		m_shooterB->SetAllowableClosedLoopErr(0);
+		m_shooterB->SelectProfileSlot(0);
 
-		m_shooter2 = new CANTalon(3);
-		m_shooter2->SetControlMode(CANSpeedController::kFollower);
-		m_shooter2->Set(1);
+		m_shooterA = new CANTalon(3);
+		m_shooterA->SetControlMode(CANSpeedController::kFollower);
+		m_shooterA->Set(1);
 
 		m_climber = new CANTalon(2);
 		m_climber->SetControlMode(CANSpeedController::kSpeed);
@@ -252,8 +269,10 @@ private:
 #endif
 		m_gearHoldOut = new Solenoid(2);
 		m_gearHoldIn = new Solenoid(3);
-		m_intakeOut = new Solenoid(5);
-		m_intakeIn = new Solenoid(6);
+		//m_intakeOut = new Solenoid(5);
+		//m_intakeIn = new Solenoid();
+		m_introducerIn = new Solenoid(4);
+		m_introducerOut = new Solenoid(5);
 
 		//LED
 		m_gearLED = new Relay(0);
@@ -296,8 +315,9 @@ private:
 
 	void DisabledPeriodic()
 	{
+#ifndef PRACTICE_BOT
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
-
+#endif
 		if(m_Joystick->GetRawButton(1)) {
 			turnSide = 1;
 			DriverStation::ReportError("Turn Side: RED");
@@ -314,7 +334,7 @@ private:
 		nav->Reset();
 		m_leftEncoder->Reset();
 		m_rightEncoder->Reset();
-		m_shooter1->Set(0.f);
+		m_shooterB->Set(0.f);
 		m_gearLED->Set(Relay::kOn);
 		autoTimer->Reset();
 		//m_shotLED->Set(Relay::kOn);
@@ -330,7 +350,7 @@ private:
 			m_rightDrive3->SetSpeed(0.f);
 			//m_agitator->SetSpeed(0.f);
 			m_intake->SetSpeed(0.f);
-			m_shooter1->Set(0.f);
+			m_shooterB->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
 			break;
 		case 1: //load on middle peg, temporary auto for practice bot
@@ -341,19 +361,19 @@ private:
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
 				m_intake->SetSpeed(0.f);
-				m_shooter1->Set(0.f);
+				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				autoState++;
 				break;
 			case 1: //drive to peg
 				m_gearHoldOut->Set(false);
 				m_gearHoldIn->Set(true);
-				if(autoDrive(MIDDLE_PEG_INCHES * INCHES_TO_ENCODERS, 0)) {
+				if(autoDrive((MIDDLE_PEG_INCHES - 15) * INCHES_TO_ENCODERS, 0)) {
 					autoTimer->Start();
 					autoState++;
 				}
 				break;
-			case 2: //rest, wait for peg lift, drive back
+			case 2: //line up with peg
 				if(autoTimer->Get() > 8.0) {
 					autoDrive(-1000, 0);
 				}
@@ -424,8 +444,8 @@ private:
 		float motorOutput = 0.5*m_Joystick->GetRawAxis(3) + 0.5;
 
 
-		m_shooter1->Set(motorOutput);
-		float encoderRPM = m_shooter1->GetSpeed()*18.75f/128.f;
+		m_shooterB->Set(motorOutput);
+		float encoderRPM = m_shooterB->GetSpeed()*18.75f/128.f;
 
 		DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
 
@@ -438,44 +458,51 @@ private:
 		int setPoint = -3200;
 		gettimeofday(&tv, 0);
 
-		float encoderRPM = m_shooter1->GetSpeed();
+		float encoderRPM = m_shooterB->GetSpeed();
 		DriverStation::ReportError("setpoint: "+ std::to_string(setPoint) + "Encoder speed" + std::to_string((long)encoderRPM));
 
 		if(m_Gamepad->GetAButton()) {
-			//agTimer->Start();
-			m_shooter1->Set(setPoint);
+			agTimer->Start();
+			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			//if(agTimer->Get() > 1.0)
-				//m_intoShooter->SetSpeed(0.5);
+			if(agTimer->Get() > 0.8)
+				m_intoShooter->SetSpeed(1.0);
+			if(agTimer->Get() > 3.8) {
+				m_introducerOut->Set(false);
+				m_introducerIn->Set(true);
+			}
 
-			DriverStation::ReportError("speed error " + std::to_string(m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM));
+			DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 
-			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooter1->GetClosedLoopError()*NATIVE_TO_RPM);
+			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM);
 			file << buffer;
 
 			fileCount++;
 		}
 		else if(m_Gamepad->GetStartButton()) {
-			m_shooter1->Set(0.3 * SHOOTER_RPM);
+			m_shooterB->Set(0.3 * SHOOTER_RPM);
 			m_intoShooter->SetSpeed(-0.2);
 		}
+		else if(m_Gamepad->GetBButton())
+			m_intoShooter->SetSpeed(0.5);
 		else
 		{
-			m_shooter1->Set(0.f);
+			m_shooterB->Set(0.f);
 			//->Set(0.f);
-			//m_intoShooter->SetSpeed(0.f);
-			//agTimer->Reset();
-			//agTimer->Stop();
+			m_intoShooter->SetSpeed(0.f);
+			m_introducerOut->Set(true);
+			m_introducerIn->Set(false);
+			agTimer->Stop();
+			agTimer->Reset();
 		}
 
-		if(m_Gamepad->GetBButton()){
+		/*if(m_Gamepad->GetBButton()){
 			m_intoShooter->SetSpeed(0.5);
 		}
-		else if (!m_Gamepad->GetStartButton()){
+		else if (!m_Gamepad->GetBButton()){
 			m_intoShooter->SetSpeed(0.f);
-		}
-
+		}*/
 	}
 	/*void WHY() {
 		if(m_Gamepad->GetAButton()) {
@@ -588,6 +615,11 @@ private:
 		return 0;
 	}*/
 
+	bool lineUpGear() {//travis did this :3
+		int targetCenter;
+		return false;
+	}
+
 //=====================AUTO FUNCTIONS=====================
 
 	bool autoDrive(int distance, int angle) {
@@ -644,5 +676,7 @@ private:
 		return x * scale;
 	}
 };
-
+	/*Void DONOTENTER() {
+his name is travis -Bacca
+}*/
 START_ROBOT_CLASS(Robot)
