@@ -212,8 +212,8 @@ private:
 		m_shooterB->ConfigEncoderCodesPerRev(4096);
 		m_shooterB->SetSensorDirection(true);
 		m_shooterB->SetPID(0.04, 0, 0.4, 0.0325);
-		m_shooterB->SetCloseLoopRampRate(1);
-		m_shooterB->SetVoltageRampRate(1);
+		m_shooterB->SetCloseLoopRampRate(15);
+		//m_shooterB->SetVoltageRampRate(1);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 		m_shooterB->SelectProfileSlot(0);
 
@@ -315,9 +315,9 @@ private:
 
 	void DisabledPeriodic()
 	{
-#ifndef PRACTICE_BOT
+//#ifndef PRACTICE_BOT
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
-#endif
+//#endif
 		if(m_Joystick->GetRawButton(1)) {
 			turnSide = 1;
 			DriverStation::ReportError("Turn Side: RED");
