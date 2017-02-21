@@ -22,6 +22,8 @@
 #define GP_R 6
 #define DP_UP 0
 #define DP_DOWN 180
+#define GP_BL 2
+#define GP_BR 3
 #define INCHES_TO_ENCODERS 1245/12
 #define MIDDLE_PEG_INCHES 69.3
 #define INTAKE_SPEED 1.0 //0.6
@@ -178,6 +180,8 @@ private:
 
 	void RobotInit(void) override
 	{
+		//CameraServer::GetInstance()->StartAutomaticCapture();
+
 		//variables
 		manipState = 0;
 		fileCount = 1;
@@ -247,8 +251,8 @@ private:
 #endif
 
 		//vision
-		//std::thread visionThread(VisionThread);
-		//visionThread.detach();
+		std::thread visionThread(VisionThread);
+		visionThread.detach();
 
 
 		last_turn = 0;
@@ -477,16 +481,16 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			if(agTimer->Get() > 3)
+			if(m_shooterB->GetSpeed() > setPoint*0.93 || m_shooterB->GetSpeed() < setPoint*1.07)
 				m_intoShooter->SetSpeed(0.6);
-			/*if(m_Gamepad->GetBButton()) {
+			if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
 				m_introducerOut->Set(false);
 				m_introducerIn->Set(true);
 			}
 			else {
-				m_introducerOut->Set(false);
-				m_introducerIn->Set(true);
-			}*/
+				m_introducerOut->Set(true);
+				m_introducerIn->Set(false);
+			}
 
 			DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 
@@ -499,6 +503,8 @@ private:
 			m_shooterB->Set(0.3 * SHOOTER_RPM);
 			m_intoShooter->SetSpeed(-0.2);
 		}
+		else if(m_Gamepad->GetBackButton())
+			m_shooterB->Set(setPoint);
 		else if(m_Gamepad->GetBButton())
 			m_intoShooter->SetSpeed(0.5);
 		else
@@ -506,8 +512,8 @@ private:
 			m_shooterB->Set(0.f);
 			//->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
-			m_introducerOut->Set(true);
-			m_introducerIn->Set(false);
+			//m_introducerOut->Set(true);
+			//m_introducerIn->Set(false);
 			agTimer->Stop();
 			agTimer->Reset();
 		}
