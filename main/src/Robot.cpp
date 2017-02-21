@@ -454,8 +454,8 @@ private:
 
 	void ShooterPID() {
 
-		//int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 3000);
-		int setPoint = -3200;
+		//int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 2000);
+		int setPoint = -1625;
 		gettimeofday(&tv, 0);
 
 		float encoderRPM = m_shooterB->GetSpeed();
@@ -466,12 +466,16 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			if(agTimer->Get() > 0.8)
-				m_intoShooter->SetSpeed(1.0);
-			if(agTimer->Get() > 3.8) {
+			if(agTimer->Get() > 3)
+				m_intoShooter->SetSpeed(0.6);
+			/*if(m_Gamepad->GetBButton()) {
 				m_introducerOut->Set(false);
 				m_introducerIn->Set(true);
 			}
+			else {
+				m_introducerOut->Set(false);
+				m_introducerIn->Set(true);
+			}*/
 
 			DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 
@@ -615,10 +619,10 @@ private:
 		return 0;
 	}*/
 
-	bool lineUpGear() {//travis did this :3
+	/*bool lineUpGear() {//travis did this :3
 		int targetCenter;
 		return false;
-	}
+	}*/
 
 //=====================AUTO FUNCTIONS=====================
 
