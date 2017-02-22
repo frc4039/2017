@@ -470,7 +470,8 @@ private:
 	void ShooterPID() {
 
 		//int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 2000);
-		int setPoint = -1625;
+		int setPoint = -3300;
+
 		gettimeofday(&tv, 0);
 
 		float encoderRPM = m_shooterB->GetSpeed();
@@ -481,9 +482,15 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
+/*
 			if(m_shooterB->GetSpeed() > setPoint*0.93 || m_shooterB->GetSpeed() < setPoint*1.07)
 				m_intoShooter->SetSpeed(0.6);
 			if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
+*/
+			if(agTimer->Get() > 3.0)
+				m_intoShooter->SetSpeed(1.0);
+			if(agTimer->Get() > 6.0) {
+
 				m_introducerOut->Set(false);
 				m_introducerIn->Set(true);
 			}
