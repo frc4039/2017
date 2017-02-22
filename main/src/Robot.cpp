@@ -163,10 +163,11 @@ private:
 				//sprintf(vBuffer, "c:%d\tL:%d\tR:%d\n", center, leftHeight, rightHeight);
 				//vFile << vBuffer;
 			}
+			int center = -1;
 			if(contours.size() >= 2){
 				int leftT  = (r[0].x < r[1].x) ? 0 : 1;
 				int rightT = (leftT == 1) ? 0 : 1;
-				int center 		= r[leftT].x + r[leftT].width + (abs( r[leftT].x + r[leftT].width - r[rightT].x ) >> 1);
+				center 		= r[leftT].x + r[leftT].width + (abs( r[leftT].x + r[leftT].width - r[rightT].x ) >> 1);
 				int leftHeight	= r[leftT].height;
 				int rightHeight	= r[rightT].height;
 
@@ -321,25 +322,13 @@ private:
 //#ifndef PRACTICE_BOT
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
 //#endif
-		if(m_Joystick->GetRawButton(11)) {
+		if(m_Joystick->GetRawButton(1)) {
 			turnSide = 1;
-			DriverStation::ReportError("Turn Side: RED. Homing");
-			m_leftEncoder->Reset();
-			m_rightEncoder->Reset();
-			nav->Reset();
+			DriverStation::ReportError("Turn Side: RED");
 		}
-		else if(m_Joystick->GetRawButton(12)) {
+		else if(m_Joystick->GetRawButton(2)) {
 			turnSide = -1;
-			DriverStation::ReportError("Turn Side: BLUE. Homing");
-			m_leftEncoder->Reset();
-			m_rightEncoder->Reset();
-			nav->Reset();
-		}
-
-		for(int i = 1; i <= 10; i++) {
-			if(m_Joystick->GetRawButton(i)) {
-				autoMode = i;
-			}
+			DriverStation::ReportError("Turn Side: BLUE");
 		}
 	}
 
