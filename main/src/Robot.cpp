@@ -39,6 +39,7 @@ private:
 	int autoState;
 	int turnSide;
 	int climbState;
+	int lastClimberPos;
 
 	/*int leftT;
 	int rightT;
@@ -226,7 +227,8 @@ private:
 		m_shooterA->Set(1);
 
 		m_climber = new CANTalon(2);
-		m_climber->SetControlMode(CANSpeedController::kSpeed);
+		m_climber->SetControlMode(CANSpeedController::kPosition);
+		//m_climber->SetControlMode(CANSpeedController::kSpeed);
 		m_climber->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
 		m_climber->ConfigEncoderCodesPerRev(4096);
 		m_climber->SetSensorDirection(false);
@@ -273,8 +275,6 @@ private:
 #endif
 		m_gearHoldOut = new Solenoid(2);
 		m_gearHoldIn = new Solenoid(3);
-		//m_intakeOut = new Solenoid(5);
-		//m_intakeIn = new Solenoid();
 		m_introducerIn = new Solenoid(4);
 		m_introducerOut = new Solenoid(5);
 
@@ -471,15 +471,17 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-/*
-			if(m_shooterB->GetSpeed() > setPoint*0.93 || m_shooterB->GetSpeed() < setPoint*1.07)
+
+			if(m_shooterB->GetSpeed() > setPoint*0.93 && m_shooterB->GetSpeed() < setPoint*1.07)
 				m_intoShooter->SetSpeed(0.6);
+			else
+				m_intoShooter->SetSpeed(0.f);
+
 			if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
-*/
-			if(agTimer->Get() > 3.0)
+		/*	if(agTimer->Get() > 3.0)
 				m_intoShooter->SetSpeed(1.0);
 			if(agTimer->Get() > 6.0) {
-
+*/
 				m_introducerOut->Set(false);
 				m_introducerIn->Set(true);
 			}
@@ -505,7 +507,7 @@ private:
 			m_intoShooter->SetSpeed(0.5);
 		else
 		{
-			m_shooterB->Set(0.f);
+			m_shooterB->Set(0);
 			//->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
 			//m_introducerOut->Set(true);
@@ -612,6 +614,22 @@ private:
 	}
 
 	void advancedClimb() {
+		if(m_Gamepad->GetPOV(0) == DP_UP) {
+			m_climber->Set(m_climber->GetEncPosition() + 1/m_climber->GetP());
+			lastClimberPos = m_climber->GetPosition();
+		}
+		else if(m_Gamepad->GetPOV(0) == DP_DOWN){
+			m_climber->Set(m_climber->GetEncPosition() - 1/m_climber->GetP());
+			lastClimberPos = m_climber->GetPosition();
+		}
+		else
+		{
+			m_climber->Set(lastClimberPos);
+		}
+		DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
+	}
+
+	/*void simpleClimb() {
 		//printf("climb error: %d\n", m_climber->GetClosedLoopError()*NATIVE_TO_RPM);
 		if(m_Gamepad->GetPOV(0) == DP_UP) {
 			m_climber->Set(CLIMB_SPEED);
@@ -622,7 +640,8 @@ private:
 			m_climber->Set(-CLIMB_SPEED);
 		else
 			m_climber->Set(0.f);
-	}
+		DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
+	}*/
 
 //=====================VISION FUNCTIONS=====================
 
