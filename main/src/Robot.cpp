@@ -28,7 +28,7 @@
 #define MIDDLE_PEG_INCHES 69.3
 #define INTAKE_SPEED 1.0 //0.6
 #define CLIMB_SPEED 80
-//#define PRACTICE_BOT
+#define PRACTICE_BOT
 
 class Robot: public frc::IterativeRobot {
 private:
@@ -63,9 +63,6 @@ private:
 	VictorSP *m_rightDrive3;
 
 	VictorSP *m_intake;
-	//VictorSP *m_shooter1;
-	//VictorSP *m_agitator;
-	//VictorSP *m_elevate;
 	VictorSP *m_intoShooter;
 
 	//Talons
@@ -203,12 +200,8 @@ private:
 		m_rightDrive3 = new VictorSP(3);
 		m_rightDrive3->SetSafetyEnabled(true);
 
-		//m_agitator = new VictorSP(4);
 		m_intoShooter = new VictorSP(6);
-		//m_elevate = new VictorSP(5);
 		m_intake = new VictorSP(4);
-
-		//m_shooter1 = new VictorSP(8);
 
 		//Talons
 		m_shooterB = new CANTalon(1);
@@ -218,7 +211,6 @@ private:
 		m_shooterB->SetSensorDirection(true);
 		m_shooterB->SetPID(0.04, 0, 0.4, 0.0325);
 		m_shooterB->SetCloseLoopRampRate(15);
-		//m_shooterB->SetVoltageRampRate(1);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 		m_shooterB->SelectProfileSlot(0);
 
@@ -231,11 +223,13 @@ private:
 		//m_climber->SetControlMode(CANSpeedController::kSpeed);
 		m_climber->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
 		m_climber->ConfigEncoderCodesPerRev(4096);
-		m_climber->SetSensorDirection(false);
-		m_climber->SetPID(0, 0, 0, 2);
+		m_climber->SetSensorDirection(true); // BEN A
+		m_climber->SetPID(1, 0, 0, 0); // BEN A
 		m_climber->SetCloseLoopRampRate(0);
 		m_climber->SetAllowableClosedLoopErr(0);
 		m_climber->SelectProfileSlot(0);
+		m_climber->SetPosition(0.0); // BEN A
+		lastClimberPos = 0.0; // BEN A
 
 		// = new CANTalon(2);
 		//->SetControlMode(CANSpeedController::kSpeed);
@@ -266,13 +260,10 @@ private:
 		m_Joystick = new Joystick(0);
 
 		//pneumatics
-#ifdef PRACTICE_BOT
-		m_shiftHigh = new Solenoid(1);
-		m_shiftLow = new Solenoid(2);
-#else
+//#ifdef PRACTICE_BOT
 		m_shiftHigh = new Solenoid(0);
 		m_shiftLow = new Solenoid(1);
-#endif
+
 		m_gearHoldOut = new Solenoid(2);
 		m_gearHoldIn = new Solenoid(3);
 		m_introducerIn = new Solenoid(4);
@@ -322,13 +313,18 @@ private:
 //#ifndef PRACTICE_BOT
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
 //#endif
-		if(m_Joystick->GetRawButton(1)) {
+		if(m_Joystick->GetRawButton(11)) {
 			turnSide = 1;
 			DriverStation::ReportError("Turn Side: RED");
 		}
-		else if(m_Joystick->GetRawButton(2)) {
+		else if(m_Joystick->GetRawButton(12)) {
 			turnSide = -1;
 			DriverStation::ReportError("Turn Side: BLUE");
+		}
+
+		for(int i = 1; i <= 10; i++) {
+			if(m_Joystick->GetRawButton(i))
+				autoMode = i;
 		}
 	}
 
@@ -404,7 +400,6 @@ private:
 		operateShift();
 		operateGear();
 		advancedClimb();
-		//  WHY();
 	}
 
 	void TestPeriodic() {
@@ -523,20 +518,6 @@ private:
 			m_intoShooter->SetSpeed(0.f);
 		}*/
 	}
-	/*void WHY() {
-		if(m_Gamepad->GetAButton()) {
-			m_shooter1->Set(0.30);
-		}
-		else  {
-			m_shooter1->Set(0.f);
-		}
-		//else if(m_Gamepad->GetBButton()) {
-		//	m_intoShooter->SetSpeed(0.5);
-		//}
-		//else {
-			//m_shooter1->SetSpeed(0.f);
-		//}
-	}*/
 #define PRACTICE_DRIVE_LIMIT 1
 
 	inline void teleDrive(void) {
@@ -615,11 +596,11 @@ private:
 
 	void advancedClimb() {
 		if(m_Gamepad->GetPOV(0) == DP_UP) {
-			m_climber->Set(m_climber->GetEncPosition() + 1/m_climber->GetP());
+			m_climber->Set(m_climber->GetPosition() + 1/m_climber->GetP()); // BEN A
 			lastClimberPos = m_climber->GetPosition();
 		}
 		else if(m_Gamepad->GetPOV(0) == DP_DOWN){
-			m_climber->Set(m_climber->GetEncPosition() - 1/m_climber->GetP());
+			m_climber->Set(m_climber->GetPosition() - 1/m_climber->GetP()); // BEN A
 			lastClimberPos = m_climber->GetPosition();
 		}
 		else
