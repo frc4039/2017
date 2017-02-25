@@ -205,14 +205,14 @@ private:
 
 		//Talons
 		m_shooterB = new CANTalon(1);
-		m_shooterB->SetControlMode(CANSpeedController::kSpeed);
+		m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 		m_shooterB->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
 		m_shooterB->ConfigEncoderCodesPerRev(4096);
 		m_shooterB->SetSensorDirection(true);
+		m_shooterB->SelectProfileSlot(0);
 		m_shooterB->SetPID(0.04, 0, 0.4, 0.0325);
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
-		m_shooterB->SelectProfileSlot(0);
 
 		m_shooterA = new CANTalon(3);
 		m_shooterA->SetControlMode(CANSpeedController::kFollower);
@@ -334,6 +334,7 @@ private:
 		nav->Reset();
 		m_leftEncoder->Reset();
 		m_rightEncoder->Reset();
+		m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 		m_shooterB->Set(0.f);
 		m_gearLED->Set(Relay::kOn);
 		autoTimer->Reset();
@@ -350,6 +351,7 @@ private:
 			m_rightDrive3->SetSpeed(0.f);
 			//m_agitator->SetSpeed(0.f);
 			m_intake->SetSpeed(0.f);
+			m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
 			break;
@@ -361,6 +363,7 @@ private:
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
 				m_intake->SetSpeed(0.f);
+				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				autoState++;
@@ -442,7 +445,7 @@ private:
 	void trim(){
 		float motorOutput = 0.5*m_Joystick->GetRawAxis(3) + 0.5;
 
-
+		m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 		m_shooterB->Set(motorOutput);
 		float encoderRPM = m_shooterB->GetSpeed()*18.75f/128.f;
 
@@ -463,11 +466,11 @@ private:
 
 		if(m_Gamepad->GetAButton()) {
 			agTimer->Start();
+			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-
-			if(m_shooterB->GetSpeed() > setPoint*0.93 && m_shooterB->GetSpeed() < setPoint*1.07)
+			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.07 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
 				m_intoShooter->SetSpeed(0.6);
 			else
 				m_intoShooter->SetSpeed(0.f);
@@ -493,15 +496,19 @@ private:
 			fileCount++;
 		}
 		else if(m_Gamepad->GetStartButton()) {
+			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0.3 * SHOOTER_RPM);
 			m_intoShooter->SetSpeed(-0.2);
 		}
-		else if(m_Gamepad->GetBackButton())
+		else if(m_Gamepad->GetBackButton()) {
+			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(setPoint);
+		}
 		else if(m_Gamepad->GetBButton())
 			m_intoShooter->SetSpeed(0.5);
 		else
 		{
+			m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0);
 			//->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
@@ -595,18 +602,17 @@ private:
 	}
 
 	void advancedClimb() {
-		if(m_Gamepad->GetPOV(0) == DP_UP) {
-			m_climber->Set(m_climber->GetPosition() + 1/m_climber->GetP()); // BEN A
-			lastClimberPos = m_climber->GetPosition();
-		}
-		else if(m_Gamepad->GetPOV(0) == DP_DOWN){
-			m_climber->Set(m_climber->GetPosition() - 1/m_climber->GetP()); // BEN A
-			lastClimberPos = m_climber->GetPosition();
-		}
+		double target; // BEN A made many changes here
+		if(m_Gamepad->GetPOV(0) == DP_UP)
+			target = m_climber->GetPosition() + 1/m_climber->GetP();
+		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
+			target = m_climber->GetPosition() - 1/m_climber->GetP();
 		else
-		{
-			m_climber->Set(lastClimberPos);
-		}
+			target = lastClimberPos;
+
+		m_climber->Set(target);
+		lastClimberPos = target;
+
 		DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
 	}
 
