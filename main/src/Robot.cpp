@@ -54,9 +54,10 @@ private:
 
 	}*/
 //======================PathFollow Variables=================
-	PathFollower *toaster;
+	PathFollower *CLAMPS;
 
 	Path *path_gearCenterPeg;
+	Path *path_gearLeftPeg;
 
 	SimPID *pathDrivePID;
 	SimPID *pathTurnPID;
@@ -312,20 +313,27 @@ private:
 		climbTimer->Reset();
 		climbTimer->Stop();
 
-		int start[2] = {0, 0};
+		int zero[2] = {0, 0};
 		int end[2] = {-7500, 0};
 
-		pathTurnPID = new SimPID(0.9, 0, 0.02, 0.087266);
+		int cp1[2] = {-7000, 0};
+		int cp2[2] = {-9000, -500};
+		int leftPegEnd[2] = {-11200, -5300};
+
+		//-9700, -5300
+
+		pathTurnPID = new SimPID(1.5, 0, 0.02, 0, 0.087266);
 		//pathTurnPID = new SimPID(0.0, 0, 0.0, 0.0);
 		pathTurnPID->setContinuousAngle(true);
 
-		pathDrivePID = new SimPID(0.001, 0, 0.0002, 0);
-		pathDrivePID->setMaxOutput(0.5);
+		pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100);
+		pathDrivePID->setMaxOutput(0.6);
 
-		path_gearCenterPeg = new PathLine(start, end, 10);
+		path_gearCenterPeg = new PathLine(zero, end, 3);
+		path_gearLeftPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 20);
 
-		toaster = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
-		toaster->setIsDegrees(true);
+		CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
+		CLAMPS->setIsDegrees(true);
 	}
 
 	void DisabledInit()
@@ -353,18 +361,20 @@ private:
 			if(m_Joystick->GetRawButton(i)){
 				autoMode = i;
 				nav->ZeroYaw();
-				toaster->reset();
+				m_leftEncoder->Reset();
+				m_rightEncoder->Reset();
+				CLAMPS->reset();
 			}
 		}
 
-		toaster->updatePos(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw());
-		printf("robot position x: %d\ty:%d\n", toaster->getXPos(), toaster->getYPos());
+		CLAMPS->updatePos(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw());
+		printf("robot position x: %d\ty:%d\n", CLAMPS->getXPos(), CLAMPS->getYPos());
 	}
 
 	void AutonomousInit()
 	{
 		autoState = 0;
-		nav->Reset();
+		nav->ZeroYaw();
 		m_leftEncoder->Reset();
 		m_rightEncoder->Reset();
 		m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
@@ -401,15 +411,33 @@ private:
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
-				toaster->initPath(path_gearCenterPeg, PathBackward, 0);
+				CLAMPS->initPath(path_gearCenterPeg, PathBackward, 0);
 				autoState++;
 				break;
 			case 1:
-
 				advancedAutoDrive();
 				break;
 			}
-
+			break;
+		case 2:
+			switch(autoState){
+			case 0:
+				m_leftDrive0->SetSpeed(0.f);
+				m_leftDrive1->SetSpeed(0.f);
+				m_rightDrive2->SetSpeed(0.f);
+				m_rightDrive3->SetSpeed(0.f);
+				//m_agitator->SetSpeed(0.f);
+				m_intake->SetSpeed(0.f);
+				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
+				m_shooterB->Set(0.f);
+				m_intoShooter->SetSpeed(0.f);
+				CLAMPS->initPath(path_gearLeftPeg, PathBackward, 60);
+				autoState ++;
+				break;
+			case 1:
+				advancedAutoDrive();
+				break;
+			}
 			break;
 		}
 	}
@@ -692,14 +720,14 @@ private:
 	}
 
 	bool advancedAutoDrive(){
-		if(toaster->followPathByEnc(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw(), leftSpeed, rightSpeed) == 0){
+		if(CLAMPS->followPathByEnc(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw(), leftSpeed, rightSpeed) == 0){
 			m_leftDrive0->SetSpeed(leftSpeed);
 			m_leftDrive1->SetSpeed(leftSpeed);
 			m_rightDrive2->SetSpeed(rightSpeed);
 			m_rightDrive3->SetSpeed(rightSpeed);
 		}
 		printf("path follow left: %f, right: %f\n", leftSpeed, rightSpeed);
-		return toaster->isDone();
+		return CLAMPS->isDone();
 	}
 
 //=======================MATHY FUNCTIONS============================

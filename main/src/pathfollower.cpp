@@ -55,8 +55,9 @@ void PathFollower::driveToPoint(void){
 	turnPID->setDesiredValue(normalizeRad(desiredAngle));
 	turnSpeed = invertTurn*turnPID->calcPID(angle);
 
-	printf("driving to point (%d,%d,%d)\t", nextCoordinate[0], nextCoordinate[1], nextPoint);
+	printf("driving to point (%d,%d,%d) at (%d,%d)\n", nextCoordinate[0], nextCoordinate[1], nextPoint, posX, posY);
 	printf("das-ang: %f Err: %f out: %f\n", desiredAngle, turnPID->getError(), turnSpeed);
+	printf("das-drvv Err: %f out: %f\n", drivePID->getError(), driveSpeed);
 }
 
 
