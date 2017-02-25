@@ -14,14 +14,15 @@ public:
 	int getVelocity(void);
 	void setErrorEpsilon(float epsilon);
 	void setErrorIncrement(int inc);
-	void setDesiredValue(int val);
+	void setDesiredValue(float val);
 
 	void setMaxOutput(float max);
 	void setMinOutput(float min);
 	void resetErrorSum(void);
 
 	void setContinuousAngle(bool set);
-
+	void setIsDegrees(bool set);
+	float getError(void);
 		
 	float calcPID(float current);
 
@@ -35,6 +36,7 @@ private:
 	float m_d;   // D coefficient
 	float m_ff; //FF constant
 
+	float error;
 	float m_desiredValue; // Desired value
 	float m_previousValue; // Value at last call
 	int m_errorSum; // Sum of previous errors (for I calculation)
@@ -42,6 +44,7 @@ private:
 	float m_errorEpsilon; // Allowable error in determining when done
 	
 	bool IsContinuousAngle;
+	bool isDegrees;
 
 	bool m_firstCycle; // Flag for first cycle
 	float m_maxOutput; // Ceiling on calculation output

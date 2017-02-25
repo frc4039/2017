@@ -1,6 +1,8 @@
 #include "SimPID.h"
-#include "SimLib.h"
-#include "WPILib.h"
+#include <stdio.h>
+#include <math.h>
+//#include "SimLib.h"
+//#include "WPILib.h"
 
 /**
  * Initializes the SimPID object. All parameters default to 0.
@@ -25,6 +27,7 @@ SimPID::SimPID(float p, float i, float d, float ff, float epsilon)
 	m_previousValue = 0;
 
 	IsContinuousAngle = false;
+	isDegrees = false;
 }
 
 /**
@@ -47,12 +50,23 @@ void SimPID::setContinuousAngle(bool set)
 {
 	IsContinuousAngle = set;
 }
+
+void SimPID::setIsDegrees(bool set) {isDegrees = set;}
+
+float SimPID::getError(void){
+	return error;
+}
+
 inline float SimPID::normal(float x)
 {
-	if(x > 180)
-		x -= 360;
-	else if(x < -180)
-		x += 360;
+	if(isDegrees){
+		if(x > 180)
+			x -= 360;
+		else if(x < -180)
+			x += 360;
+	}
+	else
+		x = atan2(sin(x), cos(x));
 	return x;
 }
 float SimPID::getP()
@@ -93,7 +107,7 @@ void SimPID::setErrorIncrement(int inc)
 /**
  * Sets the desired value.
  */
-void SimPID::setDesiredValue(int val)
+void SimPID::setDesiredValue(float val)
 {
 	m_desiredValue = val;
 	if(IsContinuousAngle == true)
@@ -147,11 +161,11 @@ float SimPID::calcPID(float currentValue)
 	}
 	
 	// Calculate P Component.
-	float error = m_desiredValue - currentValue;
+	error = m_desiredValue - currentValue;
 	if(IsContinuousAngle == true)
 		error = normal(m_desiredValue - currentValue);
 	pVal = m_p * (float)error;
-	printf("SIMPID SAYS: Target: %f, current: %f, error: %f\n", m_desiredValue, currentValue, error);
+	//printf("SIMPID SAYS: Target: %f, current: %f, error: %f\n", m_desiredValue, currentValue, error);
 
 	
 	// Calculate I Component.
