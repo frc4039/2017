@@ -5,7 +5,7 @@
 #include "pathline.h"
 #include "pathcurve.h"
 #include "pathfollower.h"
-#include "SimPID.h"
+//#include "SimPID.h"
 
 #define SQ(X) ((X)*(X))
 #define PI 3.141592653589793f

@@ -130,6 +130,7 @@ int PathFollower::followPath(float &nLeftSpeed, float &nRightSpeed){
 		nRightSpeed	= -turnSpeed;
 
 		printf("das-ang: %f Err: %f out: %f\n", finalAngle, turnPID->getError(), turnSpeed);
+		printf("das-drvv Err: %f out: %f\n", drivePID->getError(), driveSpeed);
 		
 		if(turnPID->isDone())
 			done = true;
@@ -144,7 +145,7 @@ int PathFollower::followPath(float &nLeftSpeed, float &nRightSpeed){
 	//printf("angle: %f\tPosX: %d\tPosY: %d\n", rad2deg(angle), posX, posY);
 	//printf("turn: %f\tdrive: %f\n", turnSpeed, driveSpeed);
 
-	ScaleDrive(nLeftSpeed, nRightSpeed);
+	//ScaleDrive(nLeftSpeed, nRightSpeed);
 	//return 1 if follow is complete, else 0
 	return 0;
 }

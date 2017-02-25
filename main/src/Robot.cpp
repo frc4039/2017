@@ -14,6 +14,7 @@
 #include "GripPipeline.h"
 #include <IterativeRobot.h>
 #include <LiveWindow/LiveWindow.h>
+#include "shiftlib.h"
 
 //CONSTANTS
 #define SHOOTER_RPM 4000
@@ -52,6 +53,16 @@ private:
 	void addToList(int a, int b, int c, i) {
 
 	}*/
+//======================PathFollow Variables=================
+	PathFollower *toaster;
+
+	Path *path_gearCenterPeg;
+
+	SimPID *pathDrivePID;
+	SimPID *pathTurnPID;
+
+	float leftSpeed, rightSpeed;
+
 
 	char buffer[50];
 	std::ofstream file;
@@ -300,6 +311,21 @@ private:
 		climbTimer = new Timer();
 		climbTimer->Reset();
 		climbTimer->Stop();
+
+		int start[2] = {0, 0};
+		int end[2] = {-7500, 0};
+
+		pathTurnPID = new SimPID(0.9, 0, 0.02, 0.087266);
+		//pathTurnPID = new SimPID(0.0, 0, 0.0, 0.0);
+		pathTurnPID->setContinuousAngle(true);
+
+		pathDrivePID = new SimPID(0.001, 0, 0.0002, 0);
+		pathDrivePID->setMaxOutput(0.5);
+
+		path_gearCenterPeg = new PathLine(start, end, 10);
+
+		toaster = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
+		toaster->setIsDegrees(true);
 	}
 
 	void DisabledInit()
@@ -312,6 +338,7 @@ private:
 	{
 //#ifndef PRACTICE_BOT
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
+		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode) );
 //#endif
 		if(m_Joystick->GetRawButton(11)) {
 			turnSide = 1;
@@ -323,9 +350,15 @@ private:
 		}
 
 		for(int i = 1; i <= 10; i++) {
-			if(m_Joystick->GetRawButton(i))
+			if(m_Joystick->GetRawButton(i)){
 				autoMode = i;
+				nav->ZeroYaw();
+				toaster->reset();
+			}
 		}
+
+		toaster->updatePos(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw());
+		printf("robot position x: %d\ty:%d\n", toaster->getXPos(), toaster->getYPos());
 	}
 
 	void AutonomousInit()
@@ -356,32 +389,27 @@ private:
 			m_intoShooter->SetSpeed(0.f);
 			break;
 		case 1: //load on middle peg, temporary auto for practice bot
-			switch(autoState) {
-			case 0: //init
+			switch(autoState)
+			{
+			case 0:
 				m_leftDrive0->SetSpeed(0.f);
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
+				//m_agitator->SetSpeed(0.f);
 				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
+				toaster->initPath(path_gearCenterPeg, PathBackward, 0);
 				autoState++;
 				break;
-			case 1: //drive to peg
-				m_gearHoldOut->Set(false);
-				m_gearHoldIn->Set(true);
-				if(autoDrive((MIDDLE_PEG_INCHES - 15) * INCHES_TO_ENCODERS, 0)) {
-					autoTimer->Start();
-					autoState++;
-				}
-				break;
-			case 2: //line up with peg
-				if(autoTimer->Get() > 8.0) {
-					autoDrive(-1000, 0);
-				}
+			case 1:
+
+				advancedAutoDrive();
 				break;
 			}
+
 			break;
 		}
 	}
@@ -471,7 +499,7 @@ private:
 			//->Set(SHOOTER_RATIO);
 
 			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.07 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
-				m_intoShooter->SetSpeed(0.6);
+				m_intoShooter->SetSpeed(1.0);
 			else
 				m_intoShooter->SetSpeed(0.f);
 
@@ -497,7 +525,7 @@ private:
 		}
 		else if(m_Gamepad->GetStartButton()) {
 			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
-			m_shooterB->Set(0.3 * SHOOTER_RPM);
+			m_shooterB->Set(0.6 * SHOOTER_RPM);
 			m_intoShooter->SetSpeed(-0.2);
 		}
 		else if(m_Gamepad->GetBackButton()) {
@@ -661,6 +689,17 @@ private:
 		m_rightDrive3->SetSpeed(-limit(drive - turn, 1));
 
 		return drivePID->isDone() && turnPID->isDone();
+	}
+
+	bool advancedAutoDrive(){
+		if(toaster->followPathByEnc(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw(), leftSpeed, rightSpeed) == 0){
+			m_leftDrive0->SetSpeed(leftSpeed);
+			m_leftDrive1->SetSpeed(leftSpeed);
+			m_rightDrive2->SetSpeed(rightSpeed);
+			m_rightDrive3->SetSpeed(rightSpeed);
+		}
+		printf("path follow left: %f, right: %f\n", leftSpeed, rightSpeed);
+		return toaster->isDone();
 	}
 
 //=======================MATHY FUNCTIONS============================
