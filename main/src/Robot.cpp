@@ -63,7 +63,7 @@ private:
 	SimPID *pathTurnPID;
 
 	float leftSpeed, rightSpeed;
-
+	int setPoint;
 
 	char buffer[50];
 	std::ofstream file;
@@ -513,7 +513,7 @@ private:
 	void ShooterPID() {
 
 		//int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 2000);
-		int setPoint = -3300;
+
 
 		gettimeofday(&tv, 0);
 
@@ -526,7 +526,7 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.07 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
+			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.1 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
 				m_intoShooter->SetSpeed(1.0);
 			else
 				m_intoShooter->SetSpeed(0.f);
@@ -536,14 +536,16 @@ private:
 				m_intoShooter->SetSpeed(1.0);
 			if(agTimer->Get() > 6.0) {
 */
+				setPoint = -3350;
 				m_introducerOut->Set(false);
 				m_introducerIn->Set(true);
 			}
 			else {
 				m_introducerOut->Set(true);
 				m_introducerIn->Set(false);
+				setPoint = -3250;
 			}
-
+			m_shooterB->Set(setPoint);
 			DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 
 			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM);
