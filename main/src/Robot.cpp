@@ -122,8 +122,8 @@ private:
 	static int VisionThread()
 	{
 		cs::UsbCamera camera = CameraServer::GetInstance()->StartAutomaticCapture();
-		camera.SetResolution(160,120);
-		// camera.SetExposureAuto();
+		camera.SetResolution(160, 120);
+		//camera.SetExposureAuto();
 		camera.SetExposureManual(10);
 		camera.SetBrightness(65);
 		camera.SetFPS(10);
@@ -526,7 +526,7 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.1 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
+			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.06 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
 				m_intoShooter->SetSpeed(1.0);
 			else
 				m_intoShooter->SetSpeed(0.f);
@@ -536,14 +536,14 @@ private:
 				m_intoShooter->SetSpeed(1.0);
 			if(agTimer->Get() > 6.0) {
 */
-				setPoint = -3350;
+				setPoint = -3225;
 				m_introducerOut->Set(false);
 				m_introducerIn->Set(true);
 			}
 			else {
 				m_introducerOut->Set(true);
 				m_introducerIn->Set(false);
-				setPoint = -3250;
+				setPoint = -3210;
 			}
 			m_shooterB->Set(setPoint);
 			DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
@@ -662,9 +662,9 @@ private:
 	void advancedClimb() {
 		double target; // BEN A made many changes here
 		if(m_Gamepad->GetPOV(0) == DP_UP)
-			target = m_climber->GetPosition() + 1/m_climber->GetP();
-		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
 			target = m_climber->GetPosition() - 1/m_climber->GetP();
+		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
+			target = m_climber->GetPosition() + 1/m_climber->GetP();
 		else
 			target = lastClimberPos;
 
