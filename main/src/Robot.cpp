@@ -58,6 +58,7 @@ private:
 
 	Path *path_gearCenterPeg;
 	Path *path_gearLeftPeg;
+	Path *path_gearRightPeg;
 
 	SimPID *pathDrivePID;
 	SimPID *pathTurnPID;
@@ -119,6 +120,43 @@ private:
 	Timer *autoTimer;
 	Timer *climbTimer;
 
+	//vision
+	//static float pegX, pegY, pegAngle;
+
+#define KNOWN_HEIGHT 5.0f
+#define KNOWN_WIDTH 10.25f
+#define FOCAL_POINT 120.f
+#define PEG_OFFSET_X 0.0f
+#define PEG_OFFSET_Y 11.0f
+#define HFOV 0.449422282f
+#define HRES 160.0f
+#define VRES 120.0f
+#define INCH_TO_ENC 5500.f/60.f
+#define rad2deg 180.f/PI
+
+	static inline float getDistance(int pixelHeight){
+		return KNOWN_HEIGHT * FOCAL_POINT / (float)pixelHeight;
+	}
+	static inline float getAngle(int pixelValueX){
+		return atan( 2.f * (pixelValueX - (HRES/2)) * tan(HFOV) / HRES );
+	}
+	static float* getGearVector(int leftHeight, int leftWidth, int leftX, int rightHeight, int rightX){
+		float d1 = getDistance(leftHeight);
+		float d2 = getDistance(rightHeight);
+		float pegDistance = (d1 + d2) / 2;
+		float pegViewAngle = getAngle(leftX);
+		float leftTargetAngle = getAngle((leftX + leftWidth + rightX)/2);
+
+		float pegX = INCH_TO_ENC * (pegDistance * cos(pegViewAngle) + PEG_OFFSET_X);
+		float pegY = INCH_TO_ENC * (pegDistance * sin(pegViewAngle) + PEG_OFFSET_Y);
+		float pegAngle = leftTargetAngle + acos( (pow(d2,2) - pow(d1,2) - pow(KNOWN_WIDTH,2)) / (-2*d1*KNOWN_WIDTH) ) + (PI/2);
+		printf("leftAngle %f\tpegAngle %f\n", leftTargetAngle, pegViewAngle);
+		printf("leftPeg(h,d): (%d,%f)\trightPeg(h,d): (%d,%f)\n", leftHeight, d1, rightHeight, d2);
+		printf("peg vector: (%f\t%f\t%f)\n", pegX, pegY, pegAngle*rad2deg);
+		float vector[3] = { pegX, pegY, pegAngle };
+		return vector;
+	}
+
 	static int VisionThread()
 	{
 		cs::UsbCamera camera = CameraServer::GetInstance()->StartAutomaticCapture();
@@ -130,7 +168,7 @@ private:
 		camera.SetWhiteBalanceAuto();
 
 		cs::CvSink cvSink = CameraServer::GetInstance()->GetVideo();
-		cs::CvSource outputStreamStd = CameraServer::GetInstance()->PutVideo("Pipeline", 640, 480);
+		cs::CvSource outputStreamStd = CameraServer::GetInstance()->PutVideo("Pipeline", 160, 120);
 		cv::Mat source;
 		cv::Mat output;
 		grip::GripPipeline grip;
@@ -174,17 +212,19 @@ private:
 				//vFile << vBuffer;
 			}
 			int center = -1;
-			if(contours.size() >= 2){
+			if(contours.size() == 2){
 				int leftT  = (r[0].x < r[1].x) ? 0 : 1;
 				int rightT = (leftT == 1) ? 0 : 1;
 				center 		= r[leftT].x + r[leftT].width + (abs( r[leftT].x + r[leftT].width - r[rightT].x ) >> 1);
 				int leftHeight	= r[leftT].height;
 				int rightHeight	= r[rightT].height;
 
+				getGearVector(r[leftT].height, r[leftT].width, r[leftT].x, r[rightT].height, r[rightT].x);
 				circle( drawing, cv::Point(center, r[leftT].y+(r[leftT].height >> 1)), abs(leftHeight - rightHeight), color3, 1, cv::LINE_4, 0 );
 			}
 			outputStreamStd.PutFrame(drawing);
-			//std::this_thread::__sleep_for(std::chrono::seconds(0), std::chrono::milliseconds(250));
+			std::this_thread::__sleep_for(std::chrono::seconds(1), std::chrono::milliseconds(0));
+
 		}
 		//	return center;
 	}
@@ -320,6 +360,10 @@ private:
 		int cp2[2] = {-9000, -500};
 		int leftPegEnd[2] = {-11200, -5300};
 
+		//int cp1[2] = {};
+		//int cp2[2] = {};
+		int RightPegEnd[2] = {};
+
 		//-9700, -5300
 
 		pathTurnPID = new SimPID(1.5, 0, 0.02, 0, 0.087266);
@@ -331,7 +375,7 @@ private:
 
 		path_gearCenterPeg = new PathLine(zero, end, 3);
 		path_gearLeftPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 20);
-
+		path_gearRightPeg = new PathCurve(zero, cp1, cp2, RightPegEnd, 20);
 		CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
 		CLAMPS->setIsDegrees(true);
 	}
@@ -368,7 +412,7 @@ private:
 		}
 
 		CLAMPS->updatePos(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw());
-		printf("robot position x: %d\ty:%d\n", CLAMPS->getXPos(), CLAMPS->getYPos());
+		//printf("robot position x: %d\ty:%d\n", CLAMPS->getXPos(), CLAMPS->getYPos());
 	}
 
 	void AutonomousInit()
@@ -381,7 +425,6 @@ private:
 		m_shooterB->Set(0.f);
 		m_gearLED->Set(Relay::kOn);
 		autoTimer->Reset();
-		//m_shotLED->Set(Relay::kOn);
 	}
 
 	void AutonomousPeriodic()
@@ -392,7 +435,6 @@ private:
 			m_leftDrive1->SetSpeed(0.f);
 			m_rightDrive2->SetSpeed(0.f);
 			m_rightDrive3->SetSpeed(0.f);
-			//m_agitator->SetSpeed(0.f);
 			m_intake->SetSpeed(0.f);
 			m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0.f);
@@ -406,7 +448,6 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				//m_agitator->SetSpeed(0.f);
 				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
@@ -419,14 +460,13 @@ private:
 				break;
 			}
 			break;
-		case 2:
+		case 2: //load on left peg
 			switch(autoState){
 			case 0:
 				m_leftDrive0->SetSpeed(0.f);
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				//m_agitator->SetSpeed(0.f);
 				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
@@ -440,7 +480,26 @@ private:
 			}
 			break;
 		}
-	}
+		/*case 3: //load on right peg
+			switch(autoState){
+			case 0:
+				m_leftDrive0->SetSpeed(0.f);
+				m_leftDrive1->SetSpeed(0.f);
+				m_rightDrive2->SetSpeed(0.f);
+				m_rightDrive3->SetSpeed(0.f);
+				m_intake->SetSpeed(0.f);
+				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
+				m_shooterB->Set(0.f);
+				m_intoShooter->SetSpeed(0.f);
+				CLAMPS->initPath(path_gearRightPeg, PathBackward, 60);
+				autoState ++;
+				break;
+			case 1:
+				advancedAutoDrive();
+				break;
+			}
+			break;*/
+		}
 
 	void TeleopInit()
 	{
@@ -562,9 +621,10 @@ private:
 			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(setPoint);
 		}
-		else if(m_Gamepad->GetBButton())
+		else if(m_Gamepad->GetBButton()) {
 			m_intoShooter->SetSpeed(0.5);
-		else
+		}
+			else
 		{
 			m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0);
@@ -690,6 +750,7 @@ private:
 
 //=====================VISION FUNCTIONS=====================
 
+
 	/*bool aimAtTarget() {
 		float turn = last_turn;
 
@@ -733,14 +794,6 @@ private:
 	}
 
 //=======================MATHY FUNCTIONS============================
-	/*float limit(float s) {
-		if (s > 1)
-			return 1;
-		else if (s < -1)
-			return -1;
-		return s;
-	}*/
-
 	inline float expo(float x, int n)
 	{
 		int sign = n % 2;
