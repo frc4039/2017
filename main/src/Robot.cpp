@@ -122,6 +122,7 @@ private:
 	//Time
 	timeval tv;
 	Timer *agTimer;
+	float agLastTime;
 	Timer *autoTimer;
 	Timer *climbTimer;
 
@@ -158,7 +159,7 @@ private:
 		//printf("leftAngle %f\tpegAngle %f\n", leftTargetAngle, pegViewAngle);
 		//printf("leftPeg(h,d): (%d,%f)\trightPeg(h,d): (%d,%f)\n", leftHeight, d1, rightHeight, d2);
 		printf("peg vector: (%f\t%f\t%f)\n", pegX, pegY, pegAngle*rad2deg);
-		float vector[3] = { pegX, pegY, pegAngle };
+		float vector[3] = {pegX, pegY, pegAngle};
 		return vector;
 	}
 
@@ -370,6 +371,14 @@ private:
 		//int cp2[2] = {};
 		int RightPegEnd[2] = {};
 
+		//int cp1[2] = {};
+		//int cp2[2] = {};
+		//int RightShot1End[2] = {};
+
+		//int cp1[2] = {};
+		//int cp2[2] = {};
+		//int LeftShot1End[2 ] = {};
+
 		//-9700, -5300
 
 		pathTurnPID = new SimPID(1.5, 0, 0.02, 0, 0.087266);
@@ -385,10 +394,12 @@ private:
 		CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
 		CLAMPS->setIsDegrees(true);
 
-		//path_rightShot1 = new PathCurve(zero,);
+		//path_rightShot1 = new PathCurve(zero, cp1, cp2, RightShot1End, 20);
 		//path_rightShot2 = new PathCurve(,);
-		//path_leftShot1 = new PathCurve(zero,);
+		//path_leftShot1 = new PathCurve(zero, cp1, cp2, LeftShot1End, 20);
 		//path_leftShot2 = new PathCurve(zero,);
+		//CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
+		//CLAMPS->setIsDegrees(true);
 	}
 
 	void DisabledInit()
@@ -490,8 +501,8 @@ private:
 				break;
 			}
 			break;
-		}
-		/*case 3: //load on right peg
+
+		case 3:
 			switch(autoState){
 			case 0:
 				m_leftDrive0->SetSpeed(0.f);
@@ -503,17 +514,59 @@ private:
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				CLAMPS->initPath(path_gearRightPeg, PathBackward, 60);
+
 				autoState ++;
 				break;
 			case 1:
 				advancedAutoDrive();
 				break;
 			}
-			break;*/
-		}
+			break;
 
-	void TeleopInit()
-	{
+		case 4:
+			switch(autoState) {
+			case 0:
+				m_leftDrive0->SetSpeed(0.f);
+				m_leftDrive1->SetSpeed(0.f);
+				m_rightDrive2->SetSpeed(0.f);
+				m_rightDrive3->SetSpeed(0.f);
+				m_intake->SetSpeed(0.f);
+				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
+				m_shooterB->Set(0.f);
+				m_intoShooter->SetSpeed(0.f);
+				//CLAMPS->initPath(path_rightShot1, PathForward, 90);
+				agTimer->Reset();
+				//agLastTime = agTimer->Get();
+				autoState ++;
+				break;
+			case 1: //shoot balls for 10 seconds
+				setPoint = -3225;
+				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
+				m_shooterB->Set(setPoint);
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.06 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
+					m_intoShooter->SetSpeed(1.0);
+				else
+					m_intoShooter->SetSpeed(0.f);
+
+				if (agTimer->Get() > 10){
+					autoState++;
+				}
+				break;
+			case 2:
+				m_shooterB->Set(0.0f);
+				m_intoShooter->SetSpeed(0.f);
+				//autoState ++;
+				break;
+			case 3:
+				CLAMPS->initPath(path_rightShot1, PathBackward, 90);
+			break;
+
+			}
+		break;
+		}
+	}
+
+	void TeleopInit() {
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
 		m_gearLED->Set(Relay::kOn);
@@ -601,7 +654,7 @@ private:
 			else {
 				m_introducerOut->Set(true);
 				m_introducerIn->Set(false);
-				setPoint = -3180;
+				setPoint = -3130;
 			}
 
 
@@ -727,13 +780,14 @@ private:
 	}
 
 	void operateGear() {
-		if(m_Gamepad->GetYButton()) {
-			m_gearHoldIn->Set(true);
-			m_gearHoldOut->Set(false);
-		}
-		else if(m_Gamepad->GetXButton()) {
+
+		if(m_Gamepad->GetXButton()) {
 			m_gearHoldIn->Set(false);
 			m_gearHoldOut->Set(true);
+		}
+		else{
+			m_gearHoldIn->Set(true);
+			m_gearHoldOut->Set(false);
 		}
 	}
 
