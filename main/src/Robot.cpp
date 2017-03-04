@@ -60,6 +60,11 @@ private:
 	Path *path_gearLeftPeg;
 	Path *path_gearRightPeg;
 
+	Path *path_rightShot1;
+	Path *path_rightShot2;
+	Path *path_leftShot1;
+	Path *path_leftShot2;
+
 	SimPID *pathDrivePID;
 	SimPID *pathTurnPID;
 
@@ -150,8 +155,8 @@ private:
 		float pegX = INCH_TO_ENC * (pegDistance * cos(pegViewAngle) + PEG_OFFSET_X);
 		float pegY = INCH_TO_ENC * (pegDistance * sin(pegViewAngle) + PEG_OFFSET_Y);
 		float pegAngle = leftTargetAngle + acos( (pow(d2,2) - pow(d1,2) - pow(KNOWN_WIDTH,2)) / (-2*d1*KNOWN_WIDTH) ) + (PI/2);
-		printf("leftAngle %f\tpegAngle %f\n", leftTargetAngle, pegViewAngle);
-		printf("leftPeg(h,d): (%d,%f)\trightPeg(h,d): (%d,%f)\n", leftHeight, d1, rightHeight, d2);
+		//printf("leftAngle %f\tpegAngle %f\n", leftTargetAngle, pegViewAngle);
+		//printf("leftPeg(h,d): (%d,%f)\trightPeg(h,d): (%d,%f)\n", leftHeight, d1, rightHeight, d2);
 		printf("peg vector: (%f\t%f\t%f)\n", pegX, pegY, pegAngle*rad2deg);
 		float vector[3] = { pegX, pegY, pegAngle };
 		return vector;
@@ -187,7 +192,8 @@ private:
 		{
 			cvSink.GrabFrame(source);
 			grip.Process(source);
-			output = *grip.GetHslThresholdOutput();
+			//imwrite("/home/lvuser/image.jpg", source);
+			//output = *grip.GetHslThresholdOutput();
 			drawing = cv::Mat::zeros( source.size(), CV_8UC3 );
 			contours = *grip.GetFilterContoursOutput();
 			r.resize(contours.size());
@@ -262,7 +268,7 @@ private:
 		m_shooterB->ConfigEncoderCodesPerRev(4096);
 		m_shooterB->SetSensorDirection(true);
 		m_shooterB->SelectProfileSlot(0);
-		m_shooterB->SetPID(0.04, 0, 0.4, 0.0325);
+		m_shooterB->SetPID(0.05, 0, 0.4, 0.033);
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
@@ -378,6 +384,11 @@ private:
 		path_gearRightPeg = new PathCurve(zero, cp1, cp2, RightPegEnd, 20);
 		CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
 		CLAMPS->setIsDegrees(true);
+
+		//path_rightShot1 = new PathCurve(zero,);
+		//path_rightShot2 = new PathCurve(,);
+		//path_leftShot1 = new PathCurve(zero,);
+		//path_leftShot2 = new PathCurve(zero,);
 	}
 
 	void DisabledInit()
@@ -551,12 +562,18 @@ private:
 
 	/*void operateShooter()
 	{
-		if (m_Gamepad->GetAButton())
-			m_shooter1->SetSpeed(1.0);
-		else
-			m_shooter1->SetSpeed(0.0);
-	}
-*/
+		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
+			setPoint = -3225;
+			m_introducerOut->Set(false);
+			m_introducerIn->Set(true);
+		}
+		else {
+			m_introducerOut->Set(true);
+			m_introducerIn->Set(false);
+			setPoint = -3210;
+		}
+	}*/
+
 	void trim(){
 		float motorOutput = 0.5*m_Joystick->GetRawAxis(3) + 0.5;
 
@@ -572,6 +589,20 @@ private:
 	void ShooterPID() {
 
 		//int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 2000);
+		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
+		/*	if(agTimer->Get() > 3.0)
+				m_intoShooter->SetSpeed(1.0);
+			if(agTimer->Get() > 6.0) {
+	*/
+				setPoint = -3225;
+				m_introducerOut->Set(false);
+				m_introducerIn->Set(true);
+			}
+			else {
+				m_introducerOut->Set(true);
+				m_introducerIn->Set(false);
+				setPoint = -3180;
+			}
 
 
 		gettimeofday(&tv, 0);
@@ -590,20 +621,7 @@ private:
 			else
 				m_intoShooter->SetSpeed(0.f);
 
-			if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
-		/*	if(agTimer->Get() > 3.0)
-				m_intoShooter->SetSpeed(1.0);
-			if(agTimer->Get() > 6.0) {
-*/
-				setPoint = -3225;
-				m_introducerOut->Set(false);
-				m_introducerIn->Set(true);
-			}
-			else {
-				m_introducerOut->Set(true);
-				m_introducerIn->Set(false);
-				setPoint = -3210;
-			}
+
 			m_shooterB->Set(setPoint);
 			DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 

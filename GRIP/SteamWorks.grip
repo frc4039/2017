@@ -1,26 +1,8 @@
 <grip:Pipeline>
   <sources>
-    <grip:MultiImageFile>
-      <property name="path[2]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH2ftD0Angle0Brightness.jpg"/>
-      <property name="path[5]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH3ftD0Angle0Brightness.jpg"/>
-      <property name="path[8]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH4ftD2Angle0Brightness.jpg"/>
-      <property name="path[12]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH5ftD3Angle0Brightness.jpg"/>
-      <property name="path[15]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH8ftD0Angle0Brightness.jpg"/>
-      <property name="index" value="1"/>
-      <property name="path[0]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH1ftD0Angle0Brightness.jpg"/>
-      <property name="path[3]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH2ftD1Angle0Brightness.jpg"/>
-      <property name="path[6]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH3ftD2Angle0Brightness.jpg"/>
-      <property name="path[9]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH4ftD3Angle0Brightness.jpg"/>
-      <property name="path[10]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH5ftD0Angle0Brightness.jpg"/>
-      <property name="path[13]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH6ftD0Angle0Brightness.jpg"/>
-      <property name="path[16]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH9ftD0Angle0Brightness.jpg"/>
-      <property name="numImages" value="17"/>
-      <property name="path[1]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH1ftD1Angle0Brightness.jpg"/>
-      <property name="path[4]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH2ftD2Angle0Brightness.jpg"/>
-      <property name="path[7]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH4ftD0Angle0Brightness.jpg"/>
-      <property name="path[11]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH5ftD2Angle0Brightness.jpg"/>
-      <property name="path[14]" value="C:\Users\ROBO\Desktop\Vision Images\LED Peg\1ftH7ftD0Angle0Brightness.jpg"/>
-    </grip:MultiImageFile>
+    <grip:ImageFile>
+      <property name="path" value="C:\Users\MakeShift\workspace\2017\GRIP\image.jpg"/>
+    </grip:ImageFile>
   </sources>
   <steps>
     <grip:Step name="CV resize">
@@ -37,122 +19,92 @@
       </grip:Input>
       <grip:Output step="0" socket="0" previewed="true"/>
     </grip:Step>
-    <grip:Step name="HSL Threshold">
+    <grip:Step name="HSV Threshold">
       <grip:Input step="1" socket="0"/>
       <grip:Input step="1" socket="1">
         <value>
-          <double>69.60431654676258</double>
-          <double>100.13651877133107</double>
+          <double>38.983050847457626</double>
+          <double>122.24598930481284</double>
         </value>
       </grip:Input>
       <grip:Input step="1" socket="2">
         <value>
-          <double>128.41726618705036</double>
+          <double>0.0</double>
           <double>255.0</double>
         </value>
       </grip:Input>
       <grip:Input step="1" socket="3">
         <value>
-          <double>16.052158273381295</double>
+          <double>151.27118644067795</double>
           <double>255.0</double>
         </value>
       </grip:Input>
-      <grip:Output step="1" socket="0" previewed="false"/>
-    </grip:Step>
-    <grip:Step name="CV erode">
-      <grip:Input step="2" socket="0"/>
-      <grip:Input step="2" socket="1"/>
-      <grip:Input step="2" socket="2"/>
-      <grip:Input step="2" socket="3">
-        <value>1.0</value>
-      </grip:Input>
-      <grip:Input step="2" socket="4">
-        <value>BORDER_DEFAULT</value>
-      </grip:Input>
-      <grip:Input step="2" socket="5"/>
-      <grip:Output step="2" socket="0" previewed="false"/>
-    </grip:Step>
-    <grip:Step name="Mask">
-      <grip:Input step="3" socket="0"/>
-      <grip:Input step="3" socket="1"/>
-      <grip:Output step="3" socket="0" previewed="true"/>
+      <grip:Output step="1" socket="0" previewed="true"/>
     </grip:Step>
     <grip:Step name="Find Contours">
-      <grip:Input step="4" socket="0"/>
-      <grip:Input step="4" socket="1">
+      <grip:Input step="2" socket="0"/>
+      <grip:Input step="2" socket="1">
         <value>false</value>
       </grip:Input>
-      <grip:Output step="4" socket="0" previewed="true"/>
+      <grip:Output step="2" socket="0" previewed="true"/>
     </grip:Step>
     <grip:Step name="Filter Contours">
-      <grip:Input step="5" socket="0"/>
-      <grip:Input step="5" socket="1">
+      <grip:Input step="3" socket="0"/>
+      <grip:Input step="3" socket="1">
+        <value>45.0</value>
+      </grip:Input>
+      <grip:Input step="3" socket="2">
         <value>0.0</value>
       </grip:Input>
-      <grip:Input step="5" socket="2">
+      <grip:Input step="3" socket="3">
         <value>0.0</value>
       </grip:Input>
-      <grip:Input step="5" socket="3">
-        <value>0</value>
-      </grip:Input>
-      <grip:Input step="5" socket="4">
+      <grip:Input step="3" socket="4">
         <value>1000.0</value>
       </grip:Input>
-      <grip:Input step="5" socket="5">
-        <value>0</value>
+      <grip:Input step="3" socket="5">
+        <value>0.0</value>
       </grip:Input>
-      <grip:Input step="5" socket="6">
-        <value>1000</value>
+      <grip:Input step="3" socket="6">
+        <value>1000.0</value>
       </grip:Input>
-      <grip:Input step="5" socket="7">
+      <grip:Input step="3" socket="7">
         <value>
           <double>0.0</double>
           <double>100.0</double>
         </value>
       </grip:Input>
-      <grip:Input step="5" socket="8">
-        <value>1000000</value>
+      <grip:Input step="3" socket="8">
+        <value>1000000.0</value>
       </grip:Input>
-      <grip:Input step="5" socket="9">
-        <value>0</value>
+      <grip:Input step="3" socket="9">
+        <value>0.0</value>
       </grip:Input>
-      <grip:Input step="5" socket="10">
-        <value>0</value>
+      <grip:Input step="3" socket="10">
+        <value>0.0</value>
       </grip:Input>
-      <grip:Input step="5" socket="11">
-        <value>1000</value>
+      <grip:Input step="3" socket="11">
+        <value>1000.0</value>
       </grip:Input>
-      <grip:Output step="5" socket="0" previewed="true"/>
+      <grip:Output step="3" socket="0" previewed="true"/>
     </grip:Step>
   </steps>
   <connections>
     <grip:Connection>
-      <grip:Output step="2" socket="0" previewed="false"/>
-      <grip:Input step="4" socket="0"/>
+      <grip:Output step="2" socket="0" previewed="true"/>
+      <grip:Input step="3" socket="0"/>
     </grip:Connection>
     <grip:Connection>
-      <grip:Output step="4" socket="0" previewed="true"/>
-      <grip:Input step="5" socket="0"/>
+      <grip:Output step="0" socket="0" previewed="true"/>
+      <grip:Input step="1" socket="0"/>
     </grip:Connection>
     <grip:Connection>
       <grip:Output source="0" socket="0" previewed="false"/>
       <grip:Input step="0" socket="0"/>
     </grip:Connection>
     <grip:Connection>
-      <grip:Output step="1" socket="0" previewed="false"/>
+      <grip:Output step="1" socket="0" previewed="true"/>
       <grip:Input step="2" socket="0"/>
-    </grip:Connection>
-    <grip:Connection>
-      <grip:Output step="0" socket="0" previewed="true"/>
-      <grip:Input step="3" socket="0"/>
-    </grip:Connection>
-    <grip:Connection>
-      <grip:Output step="0" socket="0" previewed="true"/>
-      <grip:Input step="1" socket="0"/>
-    </grip:Connection>
-    <grip:Connection>
-      <grip:Output step="2" socket="0" previewed="false"/>
-      <grip:Input step="3" socket="1"/>
     </grip:Connection>
   </connections>
   <settings>
@@ -168,7 +120,7 @@
     <language>C++</language>
     <className>GripPipeline</className>
     <implementWpilibPipeline>true</implementWpilibPipeline>
-    <saveDir>C:\Users\ROBO\GRIP</saveDir>
+    <saveDir>C:\Users\MakeShift\GRIP</saveDir>
     <packageName></packageName>
     <moduleName>grip</moduleName>
   </codeGenerationSettings>
