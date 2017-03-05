@@ -105,10 +105,12 @@ private:
 
 	//pneumatics
 	Solenoid *m_shiftHigh, *m_shiftLow;
-	Solenoid *m_gearHoldOut, *m_gearHoldIn;
+	Solenoid *m_gearPushOut, *m_gearPushIn;
 	Solenoid *m_gearPropOut, *m_gearPropIn;
 	Solenoid *m_intakeIn, *m_intakeOut;
 	Solenoid *m_introducerIn, *m_introducerOut;
+	Solenoid *m_gearHoldIn, *m_gearHoldOut;
+
 	//PIDS
 	SimPID *speedToPowerPID;
 	SimPID *drivePID;
@@ -323,10 +325,12 @@ private:
 		m_shiftHigh = new Solenoid(0);
 		m_shiftLow = new Solenoid(1);
 
-		m_gearHoldOut = new Solenoid(2);
-		m_gearHoldIn = new Solenoid(3);
+		m_gearPushOut = new Solenoid(2);
+		m_gearPushIn = new Solenoid(3);
 		m_introducerIn = new Solenoid(4);
 		m_introducerOut = new Solenoid(5);
+		m_gearHoldOut = new Solenoid(6);
+		m_gearHoldIn = new Solenoid(7);
 
 		//LED
 		m_gearLED = new Relay(0);
@@ -361,19 +365,7 @@ private:
 		climbTimer->Stop();
 
 		int zero[2] = {0, 0};
-		int end[2] = {-7500, 0};
-
-		int cp1[2] = {-7000, 0};
-		int cp2[2] = {-9000, -500};
-		int leftPegEnd[2] = {-11200, -5300};
-
-		//int cp1[2] = {};
-		//int cp2[2] = {};
-		int RightPegEnd[2] = {};
-
-		//int cp1[2] = {};
-		//int cp2[2] = {};
-		//int RightShot1End[2] = {};
+		int end[2] = {-6300, 0};
 
 		//int cp1[2] = {};
 		//int cp2[2] = {};
@@ -388,13 +380,25 @@ private:
 		pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100);
 		pathDrivePID->setMaxOutput(0.6);
 
-		path_gearCenterPeg = new PathLine(zero, end, 3);
-		path_gearLeftPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 20);
-		path_gearRightPeg = new PathCurve(zero, cp1, cp2, RightPegEnd, 20);
+		path_gearCenterPeg = new PathLine(zero, end, 10);
+
+		int cp1[2] = {-7000, 0};
+		int cp2[2] = {-9000, 1000};
+		int leftPegEnd[2] = {-11200, -4500};
+		path_gearLeftPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
+
+		int cp3[2] = {-7000, 0};
+		int cp4[2] = {-6000, -1000};
+		int RightPegEnd[2] = {-10500, 6000};
+		path_gearRightPeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
+
 		CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
 		CLAMPS->setIsDegrees(true);
 
-		//path_rightShot1 = new PathCurve(zero, cp1, cp2, RightShot1End, 20);
+		//int cp5[2] = {-3800, 0};
+		//int cp6[2] = {0, 7900};
+		int RightShot1End[2] = {-3800, 7900};
+		path_rightShot1 = new PathLine(zero, RightShot1End , 2);
 		//path_rightShot2 = new PathCurve(,);
 		//path_leftShot1 = new PathCurve(zero, cp1, cp2, LeftShot1End, 20);
 		//path_leftShot2 = new PathCurve(zero,);
@@ -406,6 +410,8 @@ private:
 	{
 		m_gearLED->Set(Relay::kOff);
 		m_shotLED->Set(Relay::kOff);
+		lastClimberPos = m_climber->GetPosition();
+		m_climber->Set(lastClimberPos);
 	}
 
 	void DisabledPeriodic()
@@ -434,7 +440,7 @@ private:
 		}
 
 		CLAMPS->updatePos(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw());
-		//printf("robot position x: %d\ty:%d\n", CLAMPS->getXPos(), CLAMPS->getYPos());
+		printf("robot position x: %d\ty:%d\n", CLAMPS->getXPos(), CLAMPS->getYPos());
 	}
 
 	void AutonomousInit()
@@ -475,10 +481,24 @@ private:
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				CLAMPS->initPath(path_gearCenterPeg, PathBackward, 0);
+				agTimer->Reset();
+				agTimer->Start();
 				autoState++;
 				break;
 			case 1:
-				advancedAutoDrive();
+				if (advancedAutoDrive()){
+					autoState++;
+				}
+				break;
+			case 2://activate plunger
+				if(agTimer->Get() > 4) {
+				m_gearPushIn->Set(false);
+				m_gearPushOut->Set(true);
+			}
+			else {
+				m_gearPushIn->Set(true);
+				m_gearPushOut->Set(false);
+						}
 				break;
 			}
 			break;
@@ -513,7 +533,7 @@ private:
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
-				CLAMPS->initPath(path_gearRightPeg, PathBackward, 60);
+				CLAMPS->initPath(path_gearRightPeg, PathBackward, -60);
 
 				autoState ++;
 				break;
@@ -534,13 +554,14 @@ private:
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
-				//CLAMPS->initPath(path_rightShot1, PathForward, 90);
+				CLAMPS->initPath(path_rightShot1, PathBackward, -7.5);
 				agTimer->Reset();
+				agTimer->Start();
 				//agLastTime = agTimer->Get();
 				autoState ++;
 				break;
 			case 1: //shoot balls for 10 seconds
-				setPoint = -3225;
+				setPoint = -3325;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
 				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.06 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
@@ -555,12 +576,8 @@ private:
 			case 2:
 				m_shooterB->Set(0.0f);
 				m_intoShooter->SetSpeed(0.f);
-				//autoState ++;
+				advancedAutoDrive();
 				break;
-			case 3:
-				CLAMPS->initPath(path_rightShot1, PathBackward, 90);
-			break;
-
 			}
 		break;
 		}
@@ -654,9 +671,8 @@ private:
 			else {
 				m_introducerOut->Set(true);
 				m_introducerIn->Set(false);
-				setPoint = -3130;
+				setPoint = -3215;
 			}
-
 
 		gettimeofday(&tv, 0);
 
@@ -782,13 +798,21 @@ private:
 	void operateGear() {
 
 		if(m_Gamepad->GetXButton()) {
-			m_gearHoldIn->Set(false);
-			m_gearHoldOut->Set(true);
+			m_gearPushIn->Set(false);
+			m_gearPushOut->Set(true);
 		}
-		else{
-			m_gearHoldIn->Set(true);
+		else if(m_Gamepad->GetYButton()){
+			m_gearPushIn->Set(true);
+			m_gearPushOut->Set(false);
+		}
+		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kRightHand) < 0.9 ) {
 			m_gearHoldOut->Set(false);
+			m_gearHoldIn->Set(true);
 		}
+		else {
+			m_gearHoldOut->Set(true);
+			m_gearHoldIn->Set(false);
+				}
 	}
 
 	void advancedClimb() {
