@@ -502,9 +502,10 @@ private:
 				break;
 			}
 			break;
-		case 2: //load on left peg
+
+		case 2: //Autonomous mode 2: Load GEAR onto left Gear Peg, RED alliance
 			switch(autoState){
-			case 0:
+			case 0: //Initial case. All motors and actuators are stopped lest a command is carried over from the previous robot session
 				m_leftDrive0->SetSpeed(0.f);
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
@@ -514,9 +515,16 @@ private:
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				CLAMPS->initPath(path_gearLeftPeg, PathBackward, 60);
-				autoState ++;
+				/* The initPath protocol is part of ShiftLib's path program
+				 * The program uses algorithms from angles and encoder outputs to determine it's position in two dimensions as opposed to one
+				 * The first input is an array of coordinates that form a Bezier curve
+				 * The second input is the direction the robot must face. In this case, it faces backward.
+				 * The third input is the angle at which the robot rests, determined by the gyroscope
+				 * This is phase 1, where the path has been determined
+				 */
+				autoState++;
 				break;
-			case 1:
+			case 1: //First case. Path program is in phase two, wherein the robot follows the predetermined path. Autonomous mode ends.
 				advancedAutoDrive();
 				break;
 			}
