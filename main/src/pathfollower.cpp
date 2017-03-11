@@ -204,6 +204,10 @@ int PathFollower::getYPos(void){
 	return posY;
 }
 
+float PathFollower::getDistance(void){
+	return path->getPathDistance(nextPoint);
+}
+
 float PathFollower::driveToAngle(void){
 	turnPID->setDesiredValue(finalAngle);
 	return turnPID->calcPID(angle);

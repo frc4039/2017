@@ -56,9 +56,9 @@ private:
 //======================PathFollow Variables=================
 	PathFollower *CLAMPS;
 
-	Path *path_gearCenterPeg;
+	Path *path_gearCenterPeg, *path_gearCenterPegBlue2;
 	Path *path_gearLeftPeg, *path_gearLeftPeg2;
-	Path *path_gearRightPeg;
+	Path *path_gearRightPeg, *path_gearRightPeg2;
 
 	Path *path_rightShot1;
 	Path *path_rightShot2;
@@ -366,23 +366,22 @@ private:
 		climbTimer->Reset();
 		climbTimer->Stop();
 
-		int zero[2] = {0, 0};
-		int end[2] = {-6400, 0};
-
-		//int cp1[2] = {};
-		//int cp2[2] = {};
-		//int LeftShot1End[2 ] = {};
-
-		//-9700, -5300
-
-		pathTurnPID = new SimPID(1.5, 0, 0.02, 0, 0.087266);
-		//pathTurnPID = new SimPID(0.0, 0, 0.0, 0.0);
+		pathTurnPID = new SimPID(1.0, 0, 0.02, 0, 0.087266);
 		pathTurnPID->setContinuousAngle(true);
 
 		pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100);
 		pathDrivePID->setMaxOutput(0.9);
 
+		int zero[2] = {0, 0};
+		int end[2] = {-6400, 0};
 		path_gearCenterPeg = new PathLine(zero, end, 10);
+		int cp6[2] = {-3000,-14500};
+		int blueEndLoaderHalf[2] = {-9238, -14500};
+		int centerPegBlueEndLoader[2] = {-37511, -14500};
+		path_gearCenterPegBlue2 = new PathCurve(end, zero, cp6, blueEndLoaderHalf, 40);
+		Path *temp = new PathLine(blueEndLoaderHalf, centerPegBlueEndLoader, 10);
+		path_gearCenterPegBlue2->add(temp);
+		delete temp;
 
 		int cp1[2] = {-7000, 0};
 		int cp2[2] = {-9000, 1000};
@@ -397,8 +396,14 @@ private:
 
 		int cp3[2] = {-7000, 0};
 		int cp4[2] = {-6000, -1000};
-		int RightPegEnd[2] = {-10500, 6000};
+		int RightPegEnd[2] = {-9300, 5000};
+		int RightLoadEnd[2] = {-37511, -2029};
 		path_gearRightPeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
+		cp3[0] = -6500;
+		cp3[1] = 670;
+		cp4[0] = -28700;
+		cp4[1] = -1345;
+		path_gearRightPeg2 = new PathCurve(RightPegEnd, cp3, cp4, RightLoadEnd, 60);
 
 		CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
 		CLAMPS->setIsDegrees(true);
@@ -478,7 +483,7 @@ private:
 			m_shooterB->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
 			break;
-		case 1: //load on middle peg, temporary auto for practice bot
+		case 1: //load on middle peg, drive along wall to load station
 			switch(autoState)
 			{
 			case 0:
@@ -491,29 +496,35 @@ private:
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				CLAMPS->initPath(path_gearCenterPeg, PathBackward, 0);
-				agTimer->Reset();
-				agTimer->Start();
 				autoState++;
 				break;
 			case 1:
 				if (advancedAutoDrive()){
 					autoState++;
+					agTimer->Reset();
+					agTimer->Start();
 				}
 				break;
 			case 2://activate plunger
-				if(agTimer->Get() > 4) {
 				m_gearPushIn->Set(false);
 				m_gearPushOut->Set(true);
-			}
-			else {
-				m_gearPushIn->Set(true);
-				m_gearPushOut->Set(false);
-						}
+				if(agTimer->Get() > 0.5) {
+					autoState++;
+					if(turnSide == BLUE_SIDE)
+						CLAMPS->initPath(path_gearCenterPegBlue2, PathForward, 0);
+				}
 				break;
+			case 3: //drive away to loader
+				if(CLAMPS->getDistance() < 28747){
+					//go to high gear, needs different PID setting
+					//m_shiftHigh->Set(true);
+					//m_shiftLow->Set(false);
+				}
+				advancedAutoDrive();
 			}
 			break;
 
-		case 2: //Autonomous mode 2: Load GEAR onto left Gear Peg, RED alliance
+		case 2: //Autonomous mode 2: Load GEAR onto left Gear Peg
 			switch(autoState){
 			case 0: //Initial case. All motors and actuators are stopped lest a command is carried over from the previous robot session
 				m_leftDrive0->SetSpeed(0.f);
@@ -549,8 +560,14 @@ private:
 				m_gearPushOut->Set(true);
 				advancedAutoDrive();
 				if(agTimer->Get() > 0.5) {
-					autoState++;
-					CLAMPS->initPath(path_gearLeftPeg2, PathForward, 43);
+					if(turnSide == BLUE_SIDE){
+						autoState++;
+						CLAMPS->initPath(path_gearLeftPeg2, PathForward, 43);
+					}
+					else{
+						autoState++;
+						CLAMPS->initPath(path_gearLeftPeg2, PathForward, 43);
+					}
 				}
 				break;
 			case 3:
@@ -577,7 +594,7 @@ private:
 			}
 			break;
 
-		case 3:
+		case 3: //right peg auto
 			switch(autoState){
 			case 0:
 				m_leftDrive0->SetSpeed(0.f);
@@ -593,9 +610,26 @@ private:
 				autoState ++;
 				break;
 			case 1:
-				advancedAutoDrive();
+				if(advancedAutoDrive()){
+					autoState++;
+					agTimer->Reset();
+					agTimer->Start();
+				}
 				break;
+			case 2: //plunge
+				m_gearPushIn->Set(false);
+				m_gearPushOut->Set(true);
+				advancedAutoDrive();
+				if(agTimer->Get() > 0.5) {
+					autoState++;
+					//drive to loader station
+					CLAMPS->initPath(path_gearRightPeg2, PathForward, 0);
+				}
+				break;
+			case 3: //drive away to loader
+				advancedAutoDrive();
 			}
+
 			break;
 
 		case 4:
@@ -731,7 +765,7 @@ private:
 			else {
 				m_introducerOut->Set(true);
 				m_introducerIn->Set(false);
-				setPoint = -3215;
+				setPoint = -3160;
 			}
 
 		gettimeofday(&tv, 0);
