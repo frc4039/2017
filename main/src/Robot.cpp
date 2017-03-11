@@ -57,7 +57,7 @@ private:
 	PathFollower *CLAMPS;
 
 	Path *path_gearCenterPeg;
-	Path *path_gearLeftPeg;
+	Path *path_gearLeftPeg, *path_gearLeftPeg2;
 	Path *path_gearRightPeg;
 
 	Path *path_rightShot1;
@@ -127,6 +127,8 @@ private:
 	float agLastTime;
 	Timer *autoTimer;
 	Timer *climbTimer;
+
+	enum TurnSide { RED_SIDE = 1, BLUE_SIDE = -1 };
 
 	//vision
 	//static float pegX, pegY, pegAngle;
@@ -246,7 +248,7 @@ private:
 		manipState = 0;
 		fileCount = 1;
 		autoMode = 0;
-		turnSide = 1;
+		turnSide = RED_SIDE;
 		climbState = 0;
 
 		file.open("/home/lvuser/pid.csv", std::ios::out);
@@ -327,10 +329,10 @@ private:
 
 		m_gearPushOut = new Solenoid(2);
 		m_gearPushIn = new Solenoid(3);
-		m_introducerIn = new Solenoid(6);
-		m_introducerOut = new Solenoid(7);
-		m_gearHoldOut = new Solenoid(4);
-		m_gearHoldIn = new Solenoid(5);
+		m_introducerIn = new Solenoid(4);
+		m_introducerOut = new Solenoid(5);
+		m_gearHoldOut = new Solenoid(6);
+		m_gearHoldIn = new Solenoid(7);
 
 		//LED
 		m_gearLED = new Relay(0);
@@ -365,7 +367,7 @@ private:
 		climbTimer->Stop();
 
 		int zero[2] = {0, 0};
-		int end[2] = {-6300, 0};
+		int end[2] = {-6400, 0};
 
 		//int cp1[2] = {};
 		//int cp2[2] = {};
@@ -378,14 +380,20 @@ private:
 		pathTurnPID->setContinuousAngle(true);
 
 		pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100);
-		pathDrivePID->setMaxOutput(0.6);
+		pathDrivePID->setMaxOutput(0.9);
 
 		path_gearCenterPeg = new PathLine(zero, end, 10);
 
 		int cp1[2] = {-7000, 0};
 		int cp2[2] = {-9000, 1000};
-		int leftPegEnd[2] = {-11200, -4500};
+		int leftPegEnd[2] = {-10800, -2700};
+		int leftShotEnd[2] = {-270, 5941};
 		path_gearLeftPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
+		cp1[0] = -5544;
+		cp1[1] = 731;
+		cp2[0] = -7749;
+		cp2[1] = 1631;
+		path_gearLeftPeg2 = new PathCurve(leftPegEnd, cp2, cp1, leftShotEnd, 40); //angle 43
 
 		int cp3[2] = {-7000, 0};
 		int cp4[2] = {-6000, -1000};
@@ -398,9 +406,10 @@ private:
 		//int cp5[2] = {-3800, 0};
 		//int cp6[2] = {0, 7900};
 		int RightShot1End[2] = {-3800, 7900};
+		int LeftShot1End[2] = {-3800, -7900};
 		path_rightShot1 = new PathLine(zero, RightShot1End , 2);
 		//path_rightShot2 = new PathCurve(,);
-		//path_leftShot1 = new PathCurve(zero, cp1, cp2, LeftShot1End, 20);
+		path_leftShot1 = new PathLine(zero, LeftShot1End, 2);
 		//path_leftShot2 = new PathCurve(zero,);
 		//CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
 		//CLAMPS->setIsDegrees(true);
@@ -421,11 +430,11 @@ private:
 		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode) );
 //#endif
 		if(m_Joystick->GetRawButton(11)) {
-			turnSide = 1;
+			turnSide = RED_SIDE;
 			DriverStation::ReportError("Turn Side: RED");
 		}
 		else if(m_Joystick->GetRawButton(12)) {
-			turnSide = -1;
+			turnSide = BLUE_SIDE;
 			DriverStation::ReportError("Turn Side: BLUE");
 		}
 
@@ -436,6 +445,7 @@ private:
 				m_leftEncoder->Reset();
 				m_rightEncoder->Reset();
 				CLAMPS->reset();
+				autoState = 0;
 			}
 		}
 
@@ -522,10 +532,47 @@ private:
 				 * The third input is the angle at which the robot rests, determined by the gyroscope
 				 * This is phase 1, where the path has been determined
 				 */
+				agTimer->Reset();
+				agTimer->Start();
 				autoState++;
 				break;
 			case 1: //First case. Path program is in phase two, wherein the robot follows the predetermined path. Autonomous mode ends.
+				if (advancedAutoDrive()){
+					autoState ++;
+					agTimer->Reset();
+					agTimer->Start();
+				}
+				break;
+			case 2:
+
+				m_gearPushIn->Set(false);
+				m_gearPushOut->Set(true);
 				advancedAutoDrive();
+				if(agTimer->Get() > 0.5) {
+					autoState++;
+					CLAMPS->initPath(path_gearLeftPeg2, PathForward, 43);
+				}
+				break;
+			case 3:
+				setPoint = -3160;
+				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
+				m_shooterB->Set(setPoint);
+				if(advancedAutoDrive())
+					autoState++;
+				break;
+			case 4:
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.06 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
+					m_intoShooter->SetSpeed(1.0);
+				else
+					m_intoShooter->SetSpeed(0.f);
+
+				if (agTimer->Get() > 8){
+					autoState++;
+				}
+				break;
+			case 5:
+				m_shooterB->Set(0.0f);
+				m_intoShooter->SetSpeed(0.f);
 				break;
 			}
 			break;
@@ -562,13 +609,16 @@ private:
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
-				CLAMPS->initPath(path_rightShot1, PathBackward, -7.5);
-				agTimer->Reset();
+				//blue side
+				if(turnSide == BLUE_SIDE)
+					CLAMPS->initPath(path_rightShot1, PathBackward, -7.5);
+				else if (turnSide == RED_SIDE)
+					CLAMPS->initPath(path_leftShot1, PathBackward, 7.5);
 				agTimer->Start();
 				//agLastTime = agTimer->Get();
 				autoState ++;
 				break;
-			case 1: //shoot balls for 10 seconds
+			case 1: //shoot balls for 8 seconds
 				setPoint = -3325;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
@@ -577,7 +627,7 @@ private:
 				else
 					m_intoShooter->SetSpeed(0.f);
 
-				if (agTimer->Get() > 10){
+				if (agTimer->Get() > 8){
 					autoState++;
 				}
 				break;
@@ -595,6 +645,8 @@ private:
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
 		m_gearLED->Set(Relay::kOn);
+		lastClimberPos = m_climber->GetPosition();
+		m_climber->Set(lastClimberPos);
 	}
 
 	void TeleopPeriodic()
