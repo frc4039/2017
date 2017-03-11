@@ -327,10 +327,10 @@ private:
 
 		m_gearPushOut = new Solenoid(2);
 		m_gearPushIn = new Solenoid(3);
-		m_introducerIn = new Solenoid(4);
-		m_introducerOut = new Solenoid(5);
-		m_gearHoldOut = new Solenoid(6);
-		m_gearHoldIn = new Solenoid(7);
+		m_introducerIn = new Solenoid(6);
+		m_introducerOut = new Solenoid(7);
+		m_gearHoldOut = new Solenoid(4);
+		m_gearHoldIn = new Solenoid(5);
 
 		//LED
 		m_gearLED = new Relay(0);
