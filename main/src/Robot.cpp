@@ -29,7 +29,11 @@
 #define MIDDLE_PEG_INCHES 69.3
 #define INTAKE_SPEED 1.0 //0.6
 #define CLIMB_SPEED 80
-#define PRACTICE_BOT
+//#define SHOOTER_SPEED -3160 //practice bot
+#define SHOOTER_SPEED -3065
+//#define AUTO_SHOOTER_SPEED -3325 //practice bot
+#define AUTO_SHOOTER_SPEED -3325
+//#define PRACTICE_BOT
 
 class Robot: public frc::IterativeRobot {
 private:
@@ -311,8 +315,8 @@ private:
 #endif
 
 		//vision
-		std::thread visionThread(VisionThread);
-		visionThread.detach();
+		//std::thread visionThread(VisionThread);
+		//visionThread.detach();
 
 
 		last_turn = 0;
@@ -326,13 +330,12 @@ private:
 //#ifdef PRACTICE_BOT
 		m_shiftHigh = new Solenoid(0);
 		m_shiftLow = new Solenoid(1);
-
 		m_gearPushOut = new Solenoid(2);
 		m_gearPushIn = new Solenoid(3);
-		m_introducerIn = new Solenoid(4);
-		m_introducerOut = new Solenoid(5);
-		m_gearHoldOut = new Solenoid(6);
-		m_gearHoldIn = new Solenoid(7);
+		m_introducerIn = new Solenoid(6); //4
+		m_introducerOut = new Solenoid(7); //5
+		m_gearHoldOut = new Solenoid(4); //6
+		m_gearHoldIn = new Solenoid(5); //7
 
 		//LED
 		m_gearLED = new Relay(0);
@@ -366,10 +369,12 @@ private:
 		climbTimer->Reset();
 		climbTimer->Stop();
 
-		pathTurnPID = new SimPID(1.0, 0, 0.02, 0, 0.087266);
+		//pathTurnPID = new SimPID(1.0, 0, 0.02, 0, 0.087266); //practice bot
+		pathTurnPID = new SimPID(0.75, 0, 0.02, 0, 0.087266);
 		pathTurnPID->setContinuousAngle(true);
 
-		pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100);
+		//pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100); practice bot
+		pathDrivePID = new SimPID(0.00085, 0, 0.0002, 0, 100);
 		pathDrivePID->setMaxOutput(0.9);
 
 		int zero[2] = {0, 0};
@@ -384,9 +389,9 @@ private:
 		delete temp;
 
 		int cp1[2] = {-7000, 0};
-		int cp2[2] = {-9000, 1000};
-		int leftPegEnd[2] = {-10800, -2700};
-		int leftShotEnd[2] = {-270, 5941};
+		int cp2[2] = {-8000, 1000}; //{-9000, 1000};
+		int leftPegEnd[2] = {-10100, -2300};//{-10800, -2700};
+		int leftShotEnd[2] = {-1000, 5041};//{-270, 5941};
 		path_gearLeftPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
 		cp1[0] = -5544;
 		cp1[1] = 731;
@@ -396,7 +401,7 @@ private:
 
 		int cp3[2] = {-7000, 0};
 		int cp4[2] = {-6000, -1000};
-		int RightPegEnd[2] = {-9300, 5000};
+		int RightPegEnd[2] = {-9500, 4750};//{-9300, 5000};
 		int RightLoadEnd[2] = {-37511, -2029};
 		path_gearRightPeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
 		cp3[0] = -6500;
@@ -543,8 +548,6 @@ private:
 				 * The third input is the angle at which the robot rests, determined by the gyroscope
 				 * This is phase 1, where the path has been determined
 				 */
-				agTimer->Reset();
-				agTimer->Start();
 				autoState++;
 				break;
 			case 1: //First case. Path program is in phase two, wherein the robot follows the predetermined path. Autonomous mode ends.
@@ -571,15 +574,15 @@ private:
 				}
 				break;
 			case 3:
-				setPoint = -3160;
+				setPoint = SHOOTER_SPEED;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
 				if(advancedAutoDrive())
 					autoState++;
 				break;
 			case 4:
-				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.06 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
-					m_intoShooter->SetSpeed(1.0);
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint)) //practice 0.06
+					m_intoShooter->SetSpeed(0.8);
 				else
 					m_intoShooter->SetSpeed(0.f);
 
@@ -653,7 +656,7 @@ private:
 				autoState ++;
 				break;
 			case 1: //shoot balls for 8 seconds
-				setPoint = -3325;
+				setPoint = AUTO_SHOOTER_SPEED;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
 				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.06 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
@@ -765,7 +768,7 @@ private:
 			else {
 				m_introducerOut->Set(true);
 				m_introducerIn->Set(false);
-				setPoint = -3160;
+				setPoint = SHOOTER_SPEED;
 			}
 
 		gettimeofday(&tv, 0);
@@ -779,8 +782,8 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.06 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
-				m_intoShooter->SetSpeed(1.0);
+			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint)) // practice bot was 0.6
+				m_intoShooter->SetSpeed(0.8); //practice bot is 1.0
 			else
 				m_intoShooter->SetSpeed(0.f);
 
