@@ -16,6 +16,8 @@
 #include <LiveWindow/LiveWindow.h>
 #include "shiftlib.h"
 
+#define PRACTICE_BOT
+
 //CONSTANTS
 #define SHOOTER_RPM 4000
 #define NATIVE_TO_RPM 0.146484375f
@@ -29,11 +31,15 @@
 #define MIDDLE_PEG_INCHES 69.3
 #define INTAKE_SPEED 1.0 //0.6
 #define CLIMB_SPEED 80
-//#define SHOOTER_SPEED -3160 //practice bot
+
+#ifdef PRACTICE_BOT
+#define SHOOTER_SPEED -3160 //practice bot
+#define AUTO_SHOOTER_SPEED -3325 //practice bot
+#else
 #define SHOOTER_SPEED -3065
-//#define AUTO_SHOOTER_SPEED -3325 //practice bot
-#define AUTO_SHOOTER_SPEED -3325
-//#define PRACTICE_BOT
+#define AUTO_SHOOTER_SPEED -3225
+#endif
+
 
 class Robot: public frc::IterativeRobot {
 private:
@@ -60,14 +66,15 @@ private:
 //======================PathFollow Variables=================
 	PathFollower *CLAMPS;
 
-	Path *path_gearCenterPeg, *path_gearCenterPegBlue2;
-	Path *path_gearLeftPeg, *path_gearLeftPeg2;
-	Path *path_gearRightPeg, *path_gearRightPeg2;
+	//gear center then load station
+	Path *path_gearCenterPeg, *path_gearCenterPegBlue2, *path_gearCenterPegRed2;
+	//gear then shoot
+	Path *path_gearShootBluePeg, *path_gearShootBluePeg2, *path_gearShootRedPeg, *path_gearShootRedPeg2;
+	// gear then go to load station
+	Path *path_gearLoadBluePeg, *path_gearLoadBluePeg2, *path_gearLoadRedPeg, *path_gearLoadRedPeg2;
+	//for shoot then cross auto
+	Path *path_blueShot1, *path_blueShot2, *path_redShot1, *path_redShot2;
 
-	Path *path_rightShot1;
-	Path *path_rightShot2;
-	Path *path_leftShot1;
-	Path *path_leftShot2;
 
 	SimPID *pathDrivePID;
 	SimPID *pathTurnPID;
@@ -377,9 +384,13 @@ private:
 		pathDrivePID = new SimPID(0.00085, 0, 0.0002, 0, 100);
 		pathDrivePID->setMaxOutput(0.9);
 
+		//=======================define autonomous paths=========================
 		int zero[2] = {0, 0};
+
+		//center peg paths
 		int end[2] = {-6400, 0};
 		path_gearCenterPeg = new PathLine(zero, end, 10);
+		//center peg blue side
 		int cp6[2] = {-3000,-14500};
 		int blueEndLoaderHalf[2] = {-9238, -14500};
 		int centerPegBlueEndLoader[2] = {-37511, -14500};
@@ -387,28 +398,64 @@ private:
 		Path *temp = new PathLine(blueEndLoaderHalf, centerPegBlueEndLoader, 10);
 		path_gearCenterPegBlue2->add(temp);
 		delete temp;
+		//center peg red side
+		cp6[1] = -cp6[1];
+		int centerPegRedEndLoader[2] = {-37511, 14500};
+		int redEndLoaderHalf[2] = {-9238, 14500};
+		path_gearCenterPegRed2 = new PathCurve(end, zero, cp6, redEndLoaderHalf, 40);
+		temp = new PathLine(redEndLoaderHalf, centerPegRedEndLoader, 10);
+		path_gearCenterPegRed2->add(temp);
+		delete temp;
 
+		//gear then shoot balls
 		int cp1[2] = {-7000, 0};
 		int cp2[2] = {-8000, 1000}; //{-9000, 1000};
 		int leftPegEnd[2] = {-10100, -2300};//{-10800, -2700};
 		int leftShotEnd[2] = {-1000, 5041};//{-270, 5941};
-		path_gearLeftPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
+		path_gearShootBluePeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
 		cp1[0] = -5544;
 		cp1[1] = 731;
 		cp2[0] = -7749;
 		cp2[1] = 1631;
-		path_gearLeftPeg2 = new PathCurve(leftPegEnd, cp2, cp1, leftShotEnd, 40); //angle 43
+		path_gearShootBluePeg2 = new PathCurve(leftPegEnd, cp2, cp1, leftShotEnd, 40); //angle 43
+		//red side path
+		cp1[0] = -7000;
+		cp1[1] = 0;
+		cp2[0] = -8000;
+		cp2[1] = -1000;
+		leftPegEnd[1] = -leftPegEnd[1];
+		path_gearShootRedPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
+		cp1[0] = -5544;
+		cp1[1] = -731;
+		cp2[0] = -7749;
+		cp2[1] = -1631;
+		leftShotEnd[1] = -leftShotEnd[1];
+		path_gearShootRedPeg2 = new PathCurve(leftPegEnd, cp2, cp1, leftShotEnd, 40); //angle 43
 
+		//gear then loader autos
 		int cp3[2] = {-7000, 0};
 		int cp4[2] = {-6000, -1000};
 		int RightPegEnd[2] = {-9500, 4750};//{-9300, 5000};
 		int RightLoadEnd[2] = {-37511, -2029};
-		path_gearRightPeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
+		path_gearLoadBluePeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
 		cp3[0] = -6500;
 		cp3[1] = 670;
 		cp4[0] = -28700;
 		cp4[1] = -1345;
-		path_gearRightPeg2 = new PathCurve(RightPegEnd, cp3, cp4, RightLoadEnd, 60);
+		path_gearLoadBluePeg2 = new PathCurve(RightPegEnd, cp3, cp4, RightLoadEnd, 60);
+		//red side
+		cp3[0] = -7000;
+		cp3[1] = 0;
+		cp4[0] = -6000;
+		cp4[1] = 1000;
+		RightPegEnd[1] = -RightPegEnd[1];
+		path_gearLoadRedPeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
+		cp3[0] = -6500;
+		cp3[1] = -670;
+		cp4[0] = -28700;
+		cp4[1] = 1345;
+		RightLoadEnd[1] = -RightLoadEnd[1];
+		path_gearLoadRedPeg2 = new PathCurve(RightPegEnd, cp3, cp4, RightLoadEnd, 60);
 
 		CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
 		CLAMPS->setIsDegrees(true);
@@ -417,10 +464,10 @@ private:
 		//int cp6[2] = {0, 7900};
 		int RightShot1End[2] = {-3800, 7900};
 		int LeftShot1End[2] = {-3800, -7900};
-		path_rightShot1 = new PathLine(zero, RightShot1End , 2);
-		//path_rightShot2 = new PathCurve(,);
-		path_leftShot1 = new PathLine(zero, LeftShot1End, 2);
-		//path_leftShot2 = new PathCurve(zero,);
+		path_blueShot1 = new PathLine(zero, RightShot1End , 2);
+		//path_blueShot2 = new PathCurve(,);
+		path_redShot1 = new PathLine(zero, LeftShot1End, 2);
+		//path_redShot2 = new PathCurve(zero,);
 		//CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
 		//CLAMPS->setIsDegrees(true);
 	}
@@ -517,6 +564,8 @@ private:
 					autoState++;
 					if(turnSide == BLUE_SIDE)
 						CLAMPS->initPath(path_gearCenterPegBlue2, PathForward, 0);
+					else
+						CLAMPS->initPath(path_gearCenterPegRed2, PathForward, 0);
 				}
 				break;
 			case 3: //drive away to loader
@@ -529,7 +578,7 @@ private:
 			}
 			break;
 
-		case 2: //Autonomous mode 2: Load GEAR onto left Gear Peg
+		case 2: //Autonomous mode 2: Load GEAR onto Peg and shoot
 			switch(autoState){
 			case 0: //Initial case. All motors and actuators are stopped lest a command is carried over from the previous robot session
 				m_leftDrive0->SetSpeed(0.f);
@@ -540,7 +589,10 @@ private:
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
-				CLAMPS->initPath(path_gearLeftPeg, PathBackward, 60);
+				if(turnSide == BLUE_SIDE)
+					CLAMPS->initPath(path_gearShootBluePeg, PathBackward, 60);
+				else
+					CLAMPS->initPath(path_gearShootRedPeg, PathBackward, -60);
 				/* The initPath protocol is part of ShiftLib's path program
 				 * The program uses algorithms from angles and encoder outputs to determine it's position in two dimensions as opposed to one
 				 * The first input is an array of coordinates that form a Bezier curve
@@ -564,13 +616,12 @@ private:
 				advancedAutoDrive();
 				if(agTimer->Get() > 0.5) {
 					if(turnSide == BLUE_SIDE){
-						autoState++;
-						CLAMPS->initPath(path_gearLeftPeg2, PathForward, 43);
+						CLAMPS->initPath(path_gearShootBluePeg2, PathForward, 43);
 					}
 					else{
-						autoState++;
-						CLAMPS->initPath(path_gearLeftPeg2, PathForward, 43);
+						CLAMPS->initPath(path_gearShootRedPeg2, PathForward, -43);
 					}
+					autoState++;
 				}
 				break;
 			case 3:
@@ -608,8 +659,10 @@ private:
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
-				CLAMPS->initPath(path_gearRightPeg, PathBackward, -60);
-
+				if(turnSide == BLUE_SIDE)
+					CLAMPS->initPath(path_gearLoadBluePeg, PathBackward, -60);
+				else
+					CLAMPS->initPath(path_gearLoadRedPeg, PathBackward, 60);
 				autoState ++;
 				break;
 			case 1:
@@ -626,7 +679,10 @@ private:
 				if(agTimer->Get() > 0.5) {
 					autoState++;
 					//drive to loader station
-					CLAMPS->initPath(path_gearRightPeg2, PathForward, 0);
+					if(turnSide==BLUE_SIDE)
+						CLAMPS->initPath(path_gearLoadBluePeg2, PathForward, 0);
+					else
+						CLAMPS->initPath(path_gearLoadRedPeg2, PathForward, 0);
 				}
 				break;
 			case 3: //drive away to loader
@@ -648,9 +704,9 @@ private:
 				m_intoShooter->SetSpeed(0.f);
 				//blue side
 				if(turnSide == BLUE_SIDE)
-					CLAMPS->initPath(path_rightShot1, PathBackward, -7.5);
+					CLAMPS->initPath(path_blueShot1, PathBackward, -7.5);
 				else if (turnSide == RED_SIDE)
-					CLAMPS->initPath(path_leftShot1, PathBackward, 7.5);
+					CLAMPS->initPath(path_redShot1, PathBackward, 7.5);
 				agTimer->Start();
 				//agLastTime = agTimer->Get();
 				autoState ++;
