@@ -16,7 +16,7 @@
 #include <LiveWindow/LiveWindow.h>
 #include "shiftlib.h"
 
-#define PRACTICE_BOT
+//#define PRACTICE_BOT
 
 //CONSTANTS
 #define SHOOTER_RPM 4000
@@ -36,7 +36,7 @@
 #define SHOOTER_SPEED -3160 //practice bot
 #define AUTO_SHOOTER_SPEED -3325 //practice bot
 #else
-#define SHOOTER_SPEED -3065
+#define SHOOTER_SPEED -3120
 #define AUTO_SHOOTER_SPEED -3225
 #endif
 
@@ -484,7 +484,7 @@ private:
 	{
 //#ifndef PRACTICE_BOT
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
-		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode) );
+		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode)  + (turnSide == RED_SIDE ? " RED" : " BLUE"));
 //#endif
 		if(m_Joystick->GetRawButton(11)) {
 			turnSide = RED_SIDE;
