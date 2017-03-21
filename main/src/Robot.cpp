@@ -49,6 +49,7 @@ private:
 	int autoMode;
 	int autoState;
 	int turnSide;
+	int nZoneLane;
 	int climbState;
 	int lastClimberPos;
 
@@ -140,6 +141,7 @@ private:
 	Timer *climbTimer;
 
 	enum TurnSide { RED_SIDE = 1, BLUE_SIDE = -1 };
+	enum NZoneLane { RAIL_LANE = 1, SHIP_LANE = 2 };
 
 	//vision
 	//static float pegX, pegY, pegAngle;
@@ -485,7 +487,7 @@ private:
 	{
 //#ifndef PRACTICE_BOT
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
-		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode)  + (turnSide == RED_SIDE ? " RED" : " BLUE"));
+		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode) + (turnSide == RED_SIDE ? " RED" : " BLUE") + (nZoneLane == RAIL_LANE ? " WLANE" : " SLANE"));
 //#endif
 		if(m_Joystick->GetRawButton(11)) {
 			turnSide = RED_SIDE;
@@ -496,8 +498,17 @@ private:
 			DriverStation::ReportError("Turn Side: BLUE");
 		}
 
-		for(int i = 1; i <= 10; i++) {
-			if(m_Joystick->GetRawButton(i)){
+		if(m_Joystick->GetRawButton(9)) {
+			nZoneLane = RAIL_LANE;
+			DriverStation::ReportError("Neutral Zone Lane: Close to WALL");
+		}
+		else if(m_Joystick->GetRawButton(10)) {
+			nZoneLane = SHIP_LANE;
+			DriverStation::ReportError("Neutral Zone Lane: Close to AIRSHIP");
+		}
+
+		for(int i = 1; i <= 8; i++) {
+			if(m_Joystick->GetRawButton(i)) {
 				autoMode = i;
 				nav->ZeroYaw();
 				m_leftEncoder->Reset();
@@ -633,7 +644,7 @@ private:
 					autoState++;
 				break;
 			case 4:
-				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint)) //practice 0.06
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint)) //practice 0.06, +SUGGESTION: ADD OR STATEMENT FOR A TIMER SO IT AT LEAST TRIES TO SHOOT EVERY TIME+
 					m_intoShooter->SetSpeed(0.8);
 				else
 					m_intoShooter->SetSpeed(0.f);
