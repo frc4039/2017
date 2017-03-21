@@ -423,6 +423,7 @@ private:
 		cp1[1] = 0;
 		cp2[0] = -8000;
 		cp2[1] = -1000;
+		leftPegEnd[0] = -9950;
 		leftPegEnd[1] = -leftPegEnd[1];
 		path_gearShootRedPeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
 		cp1[0] = -5544;
