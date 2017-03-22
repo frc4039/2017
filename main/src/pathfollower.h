@@ -57,7 +57,8 @@ public:
 	void reset(void);
 	int getXPos(void);
 	int getYPos(void);
-	float getDistance(void);
+	float getPathDistance(void);
+	float getLinearDistance(void);
 	void pickNextPoint(void);
 	bool isDone(void);
 	SimPID *turnPID;

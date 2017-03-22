@@ -587,7 +587,7 @@ private:
 				}
 				break;
 			case 3: //drive away to loader
-				if(CLAMPS->getDistance() < 28747){
+				if(CLAMPS->getPathDistance() < 28747){
 					//go to high gear, needs different PID setting
 					//m_shiftHigh->Set(true);
 					//m_shiftLow->Set(false);
@@ -646,7 +646,7 @@ private:
 				setPoint = SHOOTER_SPEED;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
-				if(advancedAutoDrive() || CLAMPS->getDistance() < 300) {
+				if(advancedAutoDrive() || CLAMPS->getLinearDistance() < 300) {
 					autoTimer->Reset();
 					autoTimer->Start();
 					autoState++;

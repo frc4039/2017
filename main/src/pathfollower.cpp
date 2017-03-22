@@ -204,8 +204,12 @@ int PathFollower::getYPos(void){
 	return posY;
 }
 
-float PathFollower::getDistance(void){
+float PathFollower::getPathDistance(void){
 	return path->getPathDistance(nextPoint);
+}
+
+float PathFollower::getLinearDistance(void){
+	return driveError;
 }
 
 float PathFollower::driveToAngle(void){
