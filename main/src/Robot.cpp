@@ -262,6 +262,7 @@ private:
 		fileCount = 1;
 		autoMode = 0;
 		turnSide = RED_SIDE;
+		nZoneLane = RAIL_LANE;
 		climbState = 0;
 
 		file.open("/home/lvuser/pid.csv", std::ios::out);
@@ -640,11 +641,14 @@ private:
 				setPoint = SHOOTER_SPEED;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
-				if(advancedAutoDrive())
+				if(advancedAutoDrive()) {
+					autoTimer->Reset();
+					autoTimer->Start();
 					autoState++;
+				}
 				break;
 			case 4:
-				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint)) //practice 0.06, +SUGGESTION: ADD OR STATEMENT FOR A TIMER SO IT AT LEAST TRIES TO SHOOT EVERY TIME+
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint) || autoTimer->Get() > 4.0) //practice 0.06
 					m_intoShooter->SetSpeed(0.8);
 				else
 					m_intoShooter->SetSpeed(0.f);
