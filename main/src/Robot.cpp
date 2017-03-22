@@ -139,6 +139,7 @@ private:
 	float agLastTime;
 	Timer *autoTimer;
 	Timer *climbTimer;
+	Timer *encTimer;
 
 	enum TurnSide { RED_SIDE = 1, BLUE_SIDE = -1 };
 	enum NZoneLane { RAIL_LANE = 1, SHIP_LANE = 2 };
@@ -379,6 +380,10 @@ private:
 		climbTimer->Reset();
 		climbTimer->Stop();
 
+		encTimer = new Timer();
+		encTimer->Reset();
+		encTimer->Stop();
+
 		//pathTurnPID = new SimPID(1.0, 0, 0.02, 0, 0.087266); //practice bot
 		pathTurnPID = new SimPID(0.75, 0, 0.02, 0, 0.087266);
 		pathTurnPID->setContinuousAngle(true);
@@ -617,7 +622,7 @@ private:
 				break;
 			case 1: //First case. Path program is in phase two, wherein the robot follows the predetermined path. Autonomous mode ends.
 				if (advancedAutoDrive()){
-					autoState ++;
+					autoState++;
 					agTimer->Reset();
 					agTimer->Start();
 				}
@@ -641,7 +646,7 @@ private:
 				setPoint = SHOOTER_SPEED;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
-				if(advancedAutoDrive()) {
+				if(advancedAutoDrive() || CLAMPS->getDistance() < 300) {
 					autoTimer->Reset();
 					autoTimer->Start();
 					autoState++;
@@ -1047,7 +1052,7 @@ private:
 		return drivePID->isDone() && turnPID->isDone();
 	}
 
-	bool advancedAutoDrive(){
+	bool advancedAutoDrive() {
 		if(CLAMPS->followPathByEnc(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw(), leftSpeed, rightSpeed) == 0){
 			m_leftDrive0->SetSpeed(leftSpeed);
 			m_leftDrive1->SetSpeed(leftSpeed);
@@ -1057,6 +1062,17 @@ private:
 		printf("path follow left: %f, right: %f\n", leftSpeed, rightSpeed);
 		return CLAMPS->isDone();
 	}
+
+/*	int getDriveSpeed() {
+		int currentDrivePos = (m_leftEncoder->Get() + m_rightEncoder->Get()) / 2;
+		int lastDrivePos;
+		bool temp = true;
+		if(encTimer->Get() > 0.1) {
+			return currentDrivePos -
+			encTimer->Reset();
+		}
+		return -1;
+	}*/
 
 //=======================MATHY FUNCTIONS============================
 	inline float expo(float x, int n)
