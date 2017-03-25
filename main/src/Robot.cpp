@@ -16,7 +16,7 @@
 #include <LiveWindow/LiveWindow.h>
 #include "shiftlib.h"
 
-//#define PRACTICE_BOT
+#define PRACTICE_BOT
 
 //CONSTANTS
 #define SHOOTER_RPM 4000
@@ -68,9 +68,9 @@ private:
 	PathFollower *CLAMPS;
 
 	//gear center then load station
-	Path *path_gearCenterPeg, *path_gearCenterPegBlue2, *path_gearCenterPegRed2;
+	Path *path_gearCenterPeg, *path_gearCenterPegBlue2, *path_gearCenterPegRed2, *path_gearCenterPegBlue3, *path_gearCenterPegRed3;
 	//gear then shoot
-	Path *path_gearShootBluePeg, *path_gearShootBluePeg2, *path_gearShootRedPeg, *path_gearShootRedPeg2;
+	Path *path_gearShootBluePeg, *path_gearShootBluePeg2, *path_gearShootRedPeg, *path_gearShootRedPeg2, *path_gearCenterBlueShot, *path_gearCenterRedShot;
 	// gear then go to load station
 	Path *path_gearLoadBluePeg, *path_gearLoadBluePeg2, *path_gearLoadRedPeg, *path_gearLoadRedPeg2;
 	//for shoot then cross auto
@@ -319,11 +319,7 @@ private:
 		m_rightEncoder = new Encoder(2,3);
 
 		//navx
-#ifndef PRACTICE_BOT
 		nav = new AHRS(SPI::Port::kMXP);
-#else
-		nav = new AHRS(I2C::Port::kOnboard);
-#endif
 
 		//vision
 		//std::thread visionThread(VisionThread);
@@ -384,6 +380,13 @@ private:
 		encTimer->Reset();
 		encTimer->Stop();
 
+#ifdef PRACTICE_BOT
+		pathTurnPID = new SimPID(1.1, 0, 0.02, 0, 0.052359);
+		pathTurnPID->setContinuousAngle(true);
+
+		pathDrivePID = new SimPID(0.002, 0, 0.0002, 0, 100);
+		pathDrivePID->setMaxOutput(0.9);
+#else
 		//pathTurnPID = new SimPID(1.0, 0, 0.02, 0, 0.087266); //practice bot
 		pathTurnPID = new SimPID(0.75, 0, 0.02, 0, 0.087266);
 		pathTurnPID->setContinuousAngle(true);
@@ -391,6 +394,8 @@ private:
 		//pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100); practice bot
 		pathDrivePID = new SimPID(0.00085, 0, 0.0002, 0, 100);
 		pathDrivePID->setMaxOutput(0.9);
+#endif
+
 
 		//=======================define autonomous paths=========================
 		int zero[2] = {0, 0};
@@ -398,14 +403,16 @@ private:
 		//center peg paths
 		int end[2] = {-6400, 0};
 		path_gearCenterPeg = new PathLine(zero, end, 10);
+
 		//center peg blue side
-		int cp6[2] = {-3000,-14500};
+		int cp6[2] = {-3000, -14500};
 		int blueEndLoaderHalf[2] = {-9238, -14500};
 		int centerPegBlueEndLoader[2] = {-37511, -14500};
 		path_gearCenterPegBlue2 = new PathCurve(end, zero, cp6, blueEndLoaderHalf, 40);
 		Path *temp = new PathLine(blueEndLoaderHalf, centerPegBlueEndLoader, 10);
 		path_gearCenterPegBlue2->add(temp);
 		delete temp;
+
 		//center peg red side
 		cp6[1] = -cp6[1];
 		int centerPegRedEndLoader[2] = {-37511, 14500};
@@ -414,6 +421,35 @@ private:
 		temp = new PathLine(redEndLoaderHalf, centerPegRedEndLoader, 10);
 		path_gearCenterPegRed2->add(temp);
 		delete temp;
+
+		//center peg blue ship
+		int cp7[2] = {-3000, -8500};
+		int centerPegBlueEndLoader2[2] = {-37511, -8500};
+		int blueEndLoaderHalf2[2] = {-9238, -8500};
+		path_gearCenterPegBlue3 = new PathCurve(end, zero, cp7, blueEndLoaderHalf2, 40);
+		temp = new PathLine(blueEndLoaderHalf2, centerPegBlueEndLoader2, 10);
+		path_gearCenterPegBlue3->add(temp);
+		delete temp;
+
+		//center peg red ship
+		cp7[1] = -cp7[1];
+		int centerPegRedEndLoader2[2] = {-37511, 8500};
+		int redEndLoaderHalf2[2] = {-9238, 8500};
+		path_gearCenterPegRed3 = new PathCurve(end, zero, cp7, redEndLoaderHalf2, 40);
+		temp = new PathLine(redEndLoaderHalf2, centerPegRedEndLoader2, 10);
+		path_gearCenterPegRed3->add(temp);
+		delete temp;
+
+		//center peg shot
+		int cp8[2] = {-3200, 0};
+		int cp9[2] = {-6900, 4700};
+		int centerPegBlueShoot[2] = {-642, 12978};
+		path_gearCenterBlueShot = new PathCurve(end, cp8, cp9, centerPegBlueShoot, 40);
+		int centerPegRedShoot[2] = {-642, -12978};
+		cp9[1] = -4700;
+		path_gearCenterRedShot = new PathCurve(end, cp8, cp9, centerPegRedShoot, 40);
+
+
 
 		//gear then shoot balls
 		int cp1[2] = {-7000, 0};
@@ -493,7 +529,8 @@ private:
 	{
 //#ifndef PRACTICE_BOT
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
-		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode) + (turnSide == RED_SIDE ? " RED" : " BLUE") + (nZoneLane == RAIL_LANE ? " WLANE" : " SLANE"));
+		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode) + (turnSide == RED_SIDE ? " RED" : " BLUE") + (autoMode == 1 && nZoneLane == RAIL_LANE ? " Wall Lane" :
+																														   autoMode == 1 && nZoneLane == SHIP_LANE ? " Ship Lane" : ""));
 //#endif
 		if(m_Joystick->GetRawButton(11)) {
 			turnSide = RED_SIDE;
@@ -504,16 +541,16 @@ private:
 			DriverStation::ReportError("Turn Side: BLUE");
 		}
 
-		if(m_Joystick->GetRawButton(9)) {
+		if(m_Joystick->GetRawButton(7)) {
 			nZoneLane = RAIL_LANE;
 			DriverStation::ReportError("Neutral Zone Lane: Close to WALL");
 		}
-		else if(m_Joystick->GetRawButton(10)) {
+		else if(m_Joystick->GetRawButton(8)) {
 			nZoneLane = SHIP_LANE;
 			DriverStation::ReportError("Neutral Zone Lane: Close to AIRSHIP");
 		}
 
-		for(int i = 1; i <= 8; i++) {
+		for(int i = 1; i <= 6; i++) {
 			if(m_Joystick->GetRawButton(i)) {
 				autoMode = i;
 				nav->ZeroYaw();
@@ -580,10 +617,14 @@ private:
 				m_gearPushOut->Set(true);
 				if(agTimer->Get() > 0.5) {
 					autoState++;
-					if(turnSide == BLUE_SIDE)
+					if(turnSide == BLUE_SIDE && nZoneLane == RAIL_LANE)
 						CLAMPS->initPath(path_gearCenterPegBlue2, PathForward, 0);
-					else
+					else if(turnSide == RED_SIDE && nZoneLane == RAIL_LANE)
 						CLAMPS->initPath(path_gearCenterPegRed2, PathForward, 0);
+					else if(turnSide == BLUE_SIDE && nZoneLane == SHIP_LANE)
+						CLAMPS->initPath(path_gearCenterPegBlue3, PathForward, 0);
+					else
+						CLAMPS->initPath(path_gearCenterPegRed3, PathForward, 0);
 				}
 				break;
 			case 3: //drive away to loader
@@ -751,7 +792,69 @@ private:
 				advancedAutoDrive();
 				break;
 			}
-		break;
+			break;
+
+		case 5: //center gear shot
+			switch(autoState)
+			{
+			case 0:
+				m_leftDrive0->SetSpeed(0.f);
+				m_leftDrive1->SetSpeed(0.f);
+				m_rightDrive2->SetSpeed(0.f);
+				m_rightDrive3->SetSpeed(0.f);
+				m_intake->SetSpeed(0.f);
+				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
+				m_shooterB->Set(0.f);
+				m_intoShooter->SetSpeed(0.f);
+				CLAMPS->initPath(path_gearCenterPeg, PathBackward, 0);
+				autoState++;
+				break;
+			case 1:
+				if(advancedAutoDrive()) {
+					autoState++;
+					agTimer->Reset();
+					agTimer->Start();
+				}
+				break;
+			case 2://activate plunger
+				m_gearPushIn->Set(false);
+				m_gearPushOut->Set(true);
+				if(agTimer->Get() > 0.5) {
+					if(turnSide == BLUE_SIDE)
+						CLAMPS->initPath(path_gearCenterBlueShot, PathForward, 43);
+					else
+						CLAMPS->initPath(path_gearCenterRedShot, PathForward, -43);
+					autoState++;
+				}
+				break;
+			case 3: //drive to shoot
+				setPoint = SHOOTER_SPEED;
+				//m_intake->SetSpeed(INTAKE_SPEED);
+				m_shooterB->SetControlMode(CANSpeedController::kSpeed);
+				m_shooterB->Set(setPoint);
+				if(advancedAutoDrive()) {
+					autoTimer->Reset();
+					autoTimer->Start();
+					autoState++;
+				}
+				break;
+			case 4: //shoot
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint) || autoTimer->Get() > 4.0) //practice 0.06
+					m_intoShooter->SetSpeed(0.8);
+				else
+					m_intoShooter->SetSpeed(0.f);
+
+				//if (agTimer->Get() > 13){
+					//autoState++;
+				//}
+				break;
+			case 5:
+				//m_intake->SetSpeed(0.f);
+				m_shooterB->Set(0.0f);
+				m_intoShooter->SetSpeed(0.f);
+				break;
+			}
+			break;
 		}
 	}
 
@@ -975,7 +1078,7 @@ private:
 			m_gearPushIn->Set(false);
 			m_gearPushOut->Set(true);
 		}
-		else if(m_Gamepad->GetYButton()){
+		else if(m_Gamepad->GetYButton()) {
 			m_gearPushIn->Set(true);
 			m_gearPushOut->Set(false);
 		}
@@ -986,7 +1089,7 @@ private:
 		else {
 			m_gearHoldOut->Set(true);
 			m_gearHoldIn->Set(false);
-				}
+		}
 	}
 
 	void advancedClimb() {
