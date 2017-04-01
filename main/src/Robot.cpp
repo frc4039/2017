@@ -16,7 +16,7 @@
 #include <LiveWindow/LiveWindow.h>
 #include "shiftlib.h"
 
-#define PRACTICE_BOT
+//#define PRACTICE_BOT
 
 //CONSTANTS
 #define SHOOTER_RPM 4000
@@ -65,7 +65,7 @@ private:
 
 	}*/
 //======================PathFollow Variables=================
-	PathFollower *CLAMPS;
+	PathFollower *PEPPER;
 
 	//gear center then load station
 	Path *path_gearCenterPeg, *path_gearCenterPegBlue2, *path_gearCenterPegRed2, *path_gearCenterPegBlue3, *path_gearCenterPegRed3;
@@ -288,7 +288,7 @@ private:
 		m_shooterB->ConfigEncoderCodesPerRev(4096);
 		m_shooterB->SetSensorDirection(true);
 		m_shooterB->SelectProfileSlot(0);
-		m_shooterB->SetPID(0.05, 0, 0.4, 0.033);
+		m_shooterB->SetPID(0.05, 0, 0.4, 0.035); //ff was 0.033
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
@@ -388,11 +388,11 @@ private:
 		pathDrivePID->setMaxOutput(0.9);
 #else
 		//pathTurnPID = new SimPID(1.0, 0, 0.02, 0, 0.087266); //practice bot
-		pathTurnPID = new SimPID(0.75, 0, 0.02, 0, 0.087266);
+		pathTurnPID = new SimPID(0.76, 0, 0.02, 0, 0.087266);
 		pathTurnPID->setContinuousAngle(true);
 
 		//pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100); practice bot
-		pathDrivePID = new SimPID(0.00085, 0, 0.0002, 0, 100);
+		pathDrivePID = new SimPID(0.000875, 0, 0.0002, 0, 200);
 		pathDrivePID->setMaxOutput(0.9);
 #endif
 
@@ -454,7 +454,7 @@ private:
 		//gear then shoot balls
 		int cp1[2] = {-7000, 0};
 		int cp2[2] = {-8000, 1000}; //{-9000, 1000};
-		int leftPegEnd[2] = {-10100, -2300};//{-10800, -2700};
+		int leftPegEnd[2] = {-9950, -2300};//{-10800, -2700};
 		int leftShotEnd[2] = {-1000, 5041};//{-270, 5941};
 		path_gearShootBluePeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
 		cp1[0] = -5544;
@@ -502,8 +502,8 @@ private:
 		RightLoadEnd[1] = -RightLoadEnd[1];
 		path_gearLoadRedPeg2 = new PathCurve(RightPegEnd, cp3, cp4, RightLoadEnd, 60);
 
-		CLAMPS = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
-		CLAMPS->setIsDegrees(true);
+		PEPPER = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
+		PEPPER->setIsDegrees(true);
 
 		//int cp5[2] = {-3800, 0};
 		//int cp6[2] = {0, 7900};
@@ -556,13 +556,13 @@ private:
 				nav->ZeroYaw();
 				m_leftEncoder->Reset();
 				m_rightEncoder->Reset();
-				CLAMPS->reset();
+				PEPPER->reset();
 				autoState = 0;
 			}
 		}
 
-		CLAMPS->updatePos(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw());
-		printf("robot position x: %d\ty:%d\n", CLAMPS->getXPos(), CLAMPS->getYPos());
+		PEPPER->updatePos(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw());
+		printf("robot position x: %d\ty:%d\n", PEPPER->getXPos(), PEPPER->getYPos());
 	}
 
 	void AutonomousInit()
@@ -602,7 +602,7 @@ private:
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
-				CLAMPS->initPath(path_gearCenterPeg, PathBackward, 0);
+				PEPPER->initPath(path_gearCenterPeg, PathBackward, 0);
 				autoState++;
 				break;
 			case 1:
@@ -618,17 +618,17 @@ private:
 				if(agTimer->Get() > 0.5) {
 					autoState++;
 					if(turnSide == BLUE_SIDE && nZoneLane == RAIL_LANE)
-						CLAMPS->initPath(path_gearCenterPegBlue2, PathForward, 0);
+						PEPPER->initPath(path_gearCenterPegBlue2, PathForward, 0);
 					else if(turnSide == RED_SIDE && nZoneLane == RAIL_LANE)
-						CLAMPS->initPath(path_gearCenterPegRed2, PathForward, 0);
+						PEPPER->initPath(path_gearCenterPegRed2, PathForward, 0);
 					else if(turnSide == BLUE_SIDE && nZoneLane == SHIP_LANE)
-						CLAMPS->initPath(path_gearCenterPegBlue3, PathForward, 0);
+						PEPPER->initPath(path_gearCenterPegBlue3, PathForward, 0);
 					else
-						CLAMPS->initPath(path_gearCenterPegRed3, PathForward, 0);
+						PEPPER->initPath(path_gearCenterPegRed3, PathForward, 0);
 				}
 				break;
 			case 3: //drive away to loader
-				if(CLAMPS->getPathDistance() < 28747){
+				if(PEPPER->getPathDistance() < 28747){
 					//go to high gear, needs different PID setting
 					//m_shiftHigh->Set(true);
 					//m_shiftLow->Set(false);
@@ -649,9 +649,9 @@ private:
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				if(turnSide == BLUE_SIDE)
-					CLAMPS->initPath(path_gearShootBluePeg, PathBackward, 60);
+					PEPPER->initPath(path_gearShootBluePeg, PathBackward, 60);
 				else
-					CLAMPS->initPath(path_gearShootRedPeg, PathBackward, -60);
+					PEPPER->initPath(path_gearShootRedPeg, PathBackward, -60);
 				/* The initPath protocol is part of ShiftLib's path program
 				 * The program uses algorithms from angles and encoder outputs to determine it's position in two dimensions as opposed to one
 				 * The first input is an array of coordinates that form a Bezier curve
@@ -675,10 +675,10 @@ private:
 				advancedAutoDrive();
 				if(agTimer->Get() > 0.5) {
 					if(turnSide == BLUE_SIDE){
-						CLAMPS->initPath(path_gearShootBluePeg2, PathForward, 43);
+						PEPPER->initPath(path_gearShootBluePeg2, PathForward, 43);
 					}
 					else{
-						CLAMPS->initPath(path_gearShootRedPeg2, PathForward, -43);
+						PEPPER->initPath(path_gearShootRedPeg2, PathForward, -43);
 					}
 					autoState++;
 				}
@@ -687,7 +687,7 @@ private:
 				setPoint = SHOOTER_SPEED;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
-				if(advancedAutoDrive() || CLAMPS->getLinearDistance() < 300) {
+				if(advancedAutoDrive() || PEPPER->getLinearDistance() < 300) {
 					autoTimer->Reset();
 					autoTimer->Start();
 					autoState++;
@@ -722,9 +722,9 @@ private:
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				if(turnSide == BLUE_SIDE)
-					CLAMPS->initPath(path_gearLoadBluePeg, PathBackward, -60);
+					PEPPER->initPath(path_gearLoadBluePeg, PathBackward, -60);
 				else
-					CLAMPS->initPath(path_gearLoadRedPeg, PathBackward, 60);
+					PEPPER->initPath(path_gearLoadRedPeg, PathBackward, 60);
 				autoState ++;
 				break;
 			case 1:
@@ -742,9 +742,9 @@ private:
 					autoState++;
 					//drive to loader station
 					if(turnSide==BLUE_SIDE)
-						CLAMPS->initPath(path_gearLoadBluePeg2, PathForward, 0);
+						PEPPER->initPath(path_gearLoadBluePeg2, PathForward, 0);
 					else
-						CLAMPS->initPath(path_gearLoadRedPeg2, PathForward, 0);
+						PEPPER->initPath(path_gearLoadRedPeg2, PathForward, 0);
 				}
 				break;
 			case 3: //drive away to loader
@@ -766,9 +766,9 @@ private:
 				m_intoShooter->SetSpeed(0.f);
 				//blue side
 				if(turnSide == BLUE_SIDE)
-					CLAMPS->initPath(path_blueShot1, PathBackward, -7.5);
+					PEPPER->initPath(path_blueShot1, PathBackward, -7.5);
 				else if (turnSide == RED_SIDE)
-					CLAMPS->initPath(path_redShot1, PathBackward, 7.5);
+					PEPPER->initPath(path_redShot1, PathBackward, 7.5);
 				agTimer->Start();
 				//agLastTime = agTimer->Get();
 				autoState ++;
@@ -806,7 +806,7 @@ private:
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
-				CLAMPS->initPath(path_gearCenterPeg, PathBackward, 0);
+				PEPPER->initPath(path_gearCenterPeg, PathBackward, 0);
 				autoState++;
 				break;
 			case 1:
@@ -821,9 +821,9 @@ private:
 				m_gearPushOut->Set(true);
 				if(agTimer->Get() > 0.5) {
 					if(turnSide == BLUE_SIDE)
-						CLAMPS->initPath(path_gearCenterBlueShot, PathForward, 43);
+						PEPPER->initPath(path_gearCenterBlueShot, PathForward, 43);
 					else
-						CLAMPS->initPath(path_gearCenterRedShot, PathForward, -43);
+						PEPPER->initPath(path_gearCenterRedShot, PathForward, -43);
 					autoState++;
 				}
 				break;
@@ -1156,14 +1156,14 @@ private:
 	}
 
 	bool advancedAutoDrive() {
-		if(CLAMPS->followPathByEnc(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw(), leftSpeed, rightSpeed) == 0){
+		if(PEPPER->followPathByEnc(m_leftEncoder->Get(), m_rightEncoder->Get(), nav->GetYaw(), leftSpeed, rightSpeed) == 0){
 			m_leftDrive0->SetSpeed(leftSpeed);
 			m_leftDrive1->SetSpeed(leftSpeed);
 			m_rightDrive2->SetSpeed(rightSpeed);
 			m_rightDrive3->SetSpeed(rightSpeed);
 		}
 		printf("path follow left: %f, right: %f\n", leftSpeed, rightSpeed);
-		return CLAMPS->isDone();
+		return PEPPER->isDone();
 	}
 
 /*	int getDriveSpeed() {
