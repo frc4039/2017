@@ -79,6 +79,7 @@ private:
 
 	SimPID *pathDrivePID;
 	SimPID *pathTurnPID;
+	SimPID *pathFinalTurnPID;
 
 	float leftSpeed, rightSpeed;
 	int setPoint;
@@ -388,12 +389,15 @@ private:
 		pathDrivePID->setMaxOutput(0.9);
 #else
 		//pathTurnPID = new SimPID(1.0, 0, 0.02, 0, 0.087266); //practice bot
-		pathTurnPID = new SimPID(0.76, 0, 0.02, 0, 0.087266);
+		pathTurnPID = new SimPID(0.745, 0, 0.02, 0, 0.087266);
 		pathTurnPID->setContinuousAngle(true);
 
 		//pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100); practice bot
 		pathDrivePID = new SimPID(0.000875, 0, 0.0002, 0, 200);
 		pathDrivePID->setMaxOutput(0.9);
+
+		pathFinalTurnPID = new SimPID(0.8, 0, 0.02, 0, 0.087266);
+		pathFinalTurnPID->setContinuousAngle(true);
 #endif
 
 
@@ -502,7 +506,7 @@ private:
 		RightLoadEnd[1] = -RightLoadEnd[1];
 		path_gearLoadRedPeg2 = new PathCurve(RightPegEnd, cp3, cp4, RightLoadEnd, 60);
 
-		PEPPER = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID);
+		PEPPER = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID, pathFinalTurnPID);
 		PEPPER->setIsDegrees(true);
 
 		//int cp5[2] = {-3800, 0};
