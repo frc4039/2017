@@ -36,7 +36,7 @@
 #define SHOOTER_SPEED -3160 //practice bot
 #define AUTO_SHOOTER_SPEED -3325 //practice bot
 #else
-#define SHOOTER_SPEED -3120
+#define SHOOTER_SPEED -3140
 #define AUTO_SHOOTER_SPEED -3225
 #endif
 
@@ -396,7 +396,7 @@ private:
 		pathDrivePID = new SimPID(0.000875, 0, 0.0002, 0, 200);
 		pathDrivePID->setMaxOutput(0.9);
 
-		pathFinalTurnPID = new SimPID(0.8, 0, 0.02, 0, 0.087266);
+		pathFinalTurnPID = new SimPID(0.825, 0, 0.02, 0, 0.087266);
 		pathFinalTurnPID->setContinuousAngle(true);
 #endif
 
@@ -446,11 +446,11 @@ private:
 
 		//center peg shot
 		int cp8[2] = {-3200, 0};
-		int cp9[2] = {-6900, 4700};
-		int centerPegBlueShoot[2] = {-642, 12978};
+		int cp9[2] = {-6800, 4900};
+		int centerPegBlueShoot[2] = {-1242, 12778};
 		path_gearCenterBlueShot = new PathCurve(end, cp8, cp9, centerPegBlueShoot, 40);
-		int centerPegRedShoot[2] = {-642, -12978};
-		cp9[1] = -4700;
+		int centerPegRedShoot[2] = {-1242, -12778};
+		cp9[1] = -4900;
 		path_gearCenterRedShot = new PathCurve(end, cp8, cp9, centerPegRedShoot, 40);
 
 
@@ -484,7 +484,7 @@ private:
 		//gear then loader autos
 		int cp3[2] = {-7000, 0};
 		int cp4[2] = {-6000, -1000};
-		int RightPegEnd[2] = {-9500, 4750};//{-9300, 5000};
+		int RightPegEnd[2] = {-9600, 5250};//{-9300, 5000};
 		int RightLoadEnd[2] = {-37511, -2029};
 		path_gearLoadBluePeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
 		cp3[0] = -6500;
@@ -836,13 +836,14 @@ private:
 				//m_intake->SetSpeed(INTAKE_SPEED);
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed);
 				m_shooterB->Set(setPoint);
-				if(advancedAutoDrive()) {
+				if(advancedAutoDrive() || PEPPER->getLinearDistance() < 500) {
 					autoTimer->Reset();
 					autoTimer->Start();
 					autoState++;
 				}
 				break;
 			case 4: //shoot
+				advancedAutoDrive();
 				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint) || autoTimer->Get() > 4.0) //practice 0.06
 					m_intoShooter->SetSpeed(0.8);
 				else
