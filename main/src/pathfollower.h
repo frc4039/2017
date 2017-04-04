@@ -48,7 +48,7 @@ private:
 	int followPath(float &nLeftSpeed, float &nRightSpeed);
 
 public:
-	PathFollower(float nDistanceError, float nMaxTurnError, SimPID *nDrivePID, SimPID *nTurnPID);
+	PathFollower(float nDistanceError, float nMaxTurnError, SimPID *nDrivePID, SimPID *nTurnPID, SimPID *nFinalTurnPID);
 	void initPath(Path *nPath, PathDirection nDirection, float nFinalAngleDegrees);
 	int followPathByEnc(int32_t leftEncoder, int32_t rightEncoder, float nAngle, float &nLeftSpeed, float &nRightSpeed);
 	int followPathByPos(int nX, int nY, float nAngle, float &nLeftSpeed, float &nRightSpeed);
@@ -63,6 +63,7 @@ public:
 	bool isDone(void);
 	SimPID *turnPID;
 	SimPID *drivePID;
+	SimPID *finalTurnPID;
 	void setInvertTurn(bool set);
 	void setInvertDrive(bool set);
 	void setIsDegrees(bool set);

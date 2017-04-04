@@ -10,7 +10,7 @@
 using namespace shiftlib;
 
 
-PathFollower::PathFollower(float nDistanceError, float nMaxTurnError, SimPID *nDrivePID, SimPID *nTurnPID)
+PathFollower::PathFollower(float nDistanceError, float nMaxTurnError, SimPID *nDrivePID, SimPID *nTurnPID, SimPID *nFinalTurnPID)
 {
 	posX = posY = 0;
 	lastX = lastY = 0;
@@ -20,6 +20,7 @@ PathFollower::PathFollower(float nDistanceError, float nMaxTurnError, SimPID *nD
 	maxTurnError = nMaxTurnError;
 	drivePID = nDrivePID;
 	turnPID = nTurnPID;
+	finalTurnPID = nFinalTurnPID;
 	
 	invertDrive = 1;
 	invertTurn = 1;
@@ -133,7 +134,7 @@ int PathFollower::followPath(float &nLeftSpeed, float &nRightSpeed){
 		printf("das-ang: %f Err: %f out: %f\n", finalAngle, turnPID->getError(), turnSpeed);
 		printf("das-drvv Err: %f out: %f\n", drivePID->getError(), driveSpeed);
 		
-		if(turnPID->isDone())
+		if(finalTurnPID->isDone())
 			done = true;
 	}
 	else
@@ -213,8 +214,8 @@ float PathFollower::getLinearDistance(void){
 }
 
 float PathFollower::driveToAngle(void){
-	turnPID->setDesiredValue(finalAngle);
-	return turnPID->calcPID(angle);
+	finalTurnPID->setDesiredValue(finalAngle);
+	return finalTurnPID->calcPID(angle);
 }
 
 bool PathFollower::isDone()
