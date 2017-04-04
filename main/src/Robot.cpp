@@ -36,7 +36,7 @@
 #define SHOOTER_SPEED -3160 //practice bot
 #define AUTO_SHOOTER_SPEED -3325 //practice bot
 #else
-#define SHOOTER_SPEED -3140
+#define SHOOTER_SPEED -3130
 #define AUTO_SHOOTER_SPEED -3225
 #endif
 
@@ -478,6 +478,7 @@ private:
 		cp1[1] = -731;
 		cp2[0] = -7749;
 		cp2[1] = -1631;
+		leftShotEnd[0] = -1200;
 		leftShotEnd[1] = -leftShotEnd[1];
 		path_gearShootRedPeg2 = new PathCurve(leftPegEnd, cp2, cp1, leftShotEnd, 40); //angle 43
 
