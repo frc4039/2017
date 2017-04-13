@@ -36,10 +36,12 @@
 #define SHOOTER_SPEED -3160 //practice bot
 #define AUTO_SHOOTER_SPEED -3325 //practice bot
 #define SHOOTER_ERROR 125
+#define INDEX_SPEED 0.8
 #else
-#define SHOOTER_SPEED -3025
+#define SHOOTER_SPEED -3035
 #define AUTO_SHOOTER_SPEED -3225
 #define SHOOTER_ERROR 25
+#define INDEX_SPEED 0.8
 #endif
 
 
@@ -487,8 +489,8 @@ private:
 		path_gearShootRedPeg2 = new PathCurve(leftPegEnd, cp2, cp1, leftShotEnd, 40); //angle 43
 
 		//gear boiler side then drive
-		int cp11[2] = {-6000, 1000};
-		int cp12[2] = {-18000 , -8000};
+		int cp11[2] = {-5000, 3000};
+		int cp12[2] = {-18000 , 8000};
 		int boilerLoaderEnd[2] = {-37500, -18500};
 		int boilerPegBlue[2] = {-9950, -2300};
 		int boilerPegRed[2] = {-9950, 2300};
@@ -716,7 +718,7 @@ private:
 				break;
 			case 4:
 				if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR) //practice 0.06
-					m_intoShooter->SetSpeed(0.8);
+					m_intoShooter->SetSpeed(INDEX_SPEED);
 				else
 					m_intoShooter->SetSpeed(0.f);
 
@@ -862,7 +864,7 @@ private:
 			case 4: //shoot
 				advancedAutoDrive();
 				if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR) //practice 0.06
-					m_intoShooter->SetSpeed(0.8);
+					m_intoShooter->SetSpeed(INDEX_SPEED);
 				else
 					m_intoShooter->SetSpeed(0.f);
 
@@ -1040,8 +1042,8 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR)// 0.04 * fabs(setPoint)) // practice bot was 0.6
-				m_intoShooter->SetSpeed(0.8); //practice bot is 1.0
+			if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR )// 0.04 * fabs(setPoint)) // practice bot was 0.6
+				m_intoShooter->SetSpeed(INDEX_SPEED); //practice bot is 1.0
 			else
 				m_intoShooter->SetSpeed(0.f);
 
@@ -1062,6 +1064,12 @@ private:
 		else if(m_Gamepad->GetBackButton()) {
 			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(setPoint);
+			if(m_Gamepad->GetBButton()){
+				m_intoShooter->SetSpeed(INDEX_SPEED);
+			}
+			else{
+				m_intoShooter->SetSpeed(0.0);
+			}
 		}
 		else if(m_Gamepad->GetBButton()) {
 			m_intoShooter->SetSpeed(0.5);
