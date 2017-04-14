@@ -1189,12 +1189,13 @@ private:
 			target = m_climber->GetPosition() + 1/m_climber->GetP();
 		else
 			target = lastClimberPos;
-		/*
-		if(current - 40 > 0.0){
-			target = m_climber->GetPosition() - 1/(0.1*m_climber->GetP());
-			DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
-		}*/
 
+		if(current - 40 > 0.0){
+			target = m_climber->GetPosition() + 1/(16*m_climber->GetP());
+			DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
+		}
+
+		DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
 		m_climber->Set(target);
 		lastClimberPos = target;
 
