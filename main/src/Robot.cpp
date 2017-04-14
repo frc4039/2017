@@ -38,7 +38,7 @@
 #define SHOOTER_ERROR 125
 #define INDEX_SPEED 0.8
 #else
-#define SHOOTER_SPEED -3035
+#define SHOOTER_SPEED -3045
 #define AUTO_SHOOTER_SPEED -3225
 #define SHOOTER_ERROR 25
 #define INDEX_SPEED 0.8
@@ -47,6 +47,7 @@
 
 class Robot: public frc::IterativeRobot {
 private:
+	PowerDistributionPanel *pdp;
 	//variables
 	int manipState;
 	int fileCount;
@@ -264,7 +265,7 @@ private:
 	void RobotInit(void) override
 	{
 		//CameraServer::GetInstance()->StartAutomaticCapture();
-
+		pdp = new PowerDistributionPanel();
 		//variables
 		manipState = 0;
 		fileCount = 1;
@@ -295,7 +296,7 @@ private:
 		m_shooterB->ConfigEncoderCodesPerRev(4096);
 		m_shooterB->SetSensorDirection(true);
 		m_shooterB->SelectProfileSlot(0);
-		m_shooterB->SetPID(0.05, 0, 0.4, 0.035); //ff was 0.033
+		m_shooterB->SetPID(0.1, 0, 0.4, 0.0335); //ff was 0.033
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
@@ -425,7 +426,7 @@ private:
 
 		//center peg red side
 		cp6[1] = -cp6[1];
-		int centerPegRedEndLoader[2] = {-37511, 14500};
+		int centerPegRedEndLoader[2] = {-40000, 14500};
 		int redEndLoaderHalf[2] = {-9238, 14500};
 		path_gearCenterPegRed2 = new PathCurve(end, zero, cp6, redEndLoaderHalf, 40);
 		temp = new PathLine(redEndLoaderHalf, centerPegRedEndLoader, 10);
@@ -434,7 +435,7 @@ private:
 
 		//center peg blue ship
 		int cp7[2] = {-3000, -8500};
-		int centerPegBlueEndLoader2[2] = {-37511, -8500};
+		int centerPegBlueEndLoader2[2] = {-40000, -8500};
 		int blueEndLoaderHalf2[2] = {-9238, -8500};
 		path_gearCenterPegBlue3 = new PathCurve(end, zero, cp7, blueEndLoaderHalf2, 40);
 		temp = new PathLine(blueEndLoaderHalf2, centerPegBlueEndLoader2, 10);
@@ -443,7 +444,7 @@ private:
 
 		//center peg red ship
 		cp7[1] = -cp7[1];
-		int centerPegRedEndLoader2[2] = {-37511, 8500};
+		int centerPegRedEndLoader2[2] = {-40000, 8500};
 		int redEndLoaderHalf2[2] = {-9238, 8500};
 		path_gearCenterPegRed3 = new PathCurve(end, zero, cp7, redEndLoaderHalf2, 40);
 		temp = new PathLine(redEndLoaderHalf2, centerPegRedEndLoader2, 10);
@@ -491,7 +492,7 @@ private:
 		//gear boiler side then drive
 		int cp11[2] = {-5000, 3000};
 		int cp12[2] = {-18000 , 8000};
-		int boilerLoaderEnd[2] = {-37500, -18500};
+		int boilerLoaderEnd[2] = {-40000, -18500};
 		int boilerPegBlue[2] = {-9950, -2300};
 		int boilerPegRed[2] = {-9950, 2300};
 		path_gearBoilerBlueLoader2 = new PathCurve(boilerPegBlue, cp11, cp12, boilerLoaderEnd, 50);
@@ -504,7 +505,7 @@ private:
 		int cp3[2] = {-7000, 0};
 		int cp4[2] = {-6000, -1000};
 		int RightPegEnd[2] = {-9600, 5250};//{-9300, 5000};
-		int RightLoadEnd[2] = {-37511, -2029};
+		int RightLoadEnd[2] = {-40000, -2029};
 		path_gearLoadBluePeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
 		cp3[0] = -6500;
 		cp3[1] = 670;
@@ -1008,7 +1009,7 @@ private:
 		m_shooterB->Set(motorOutput);
 		float encoderRPM = m_shooterB->GetSpeed()*18.75f/128.f;
 
-		DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
+		//DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
 
 
 	}
@@ -1049,7 +1050,7 @@ private:
 
 
 			m_shooterB->Set(setPoint);
-			DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
+			//DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 
 			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM);
 			file << buffer;
@@ -1179,18 +1180,25 @@ private:
 	}
 
 	void advancedClimb() {
-		double target; // BEN A made many changes here
+		double target;
+		double current = pdp->GetCurrent(2);
+
 		if(m_Gamepad->GetPOV(0) == DP_UP)
 			target = m_climber->GetPosition() - 1/m_climber->GetP();
 		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
 			target = m_climber->GetPosition() + 1/m_climber->GetP();
 		else
 			target = lastClimberPos;
+		/*
+		if(current - 40 > 0.0){
+			target = m_climber->GetPosition() - 1/(0.1*m_climber->GetP());
+			DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
+		}*/
 
 		m_climber->Set(target);
 		lastClimberPos = target;
 
-		DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
+		//DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
 	}
 
 	/*void simpleClimb() {
