@@ -35,14 +35,19 @@
 #ifdef PRACTICE_BOT
 #define SHOOTER_SPEED -3160 //practice bot
 #define AUTO_SHOOTER_SPEED -3325 //practice bot
+#define SHOOTER_ERROR 125
+#define INDEX_SPEED 0.8
 #else
-#define SHOOTER_SPEED -3130
+#define SHOOTER_SPEED -3045
 #define AUTO_SHOOTER_SPEED -3225
+#define SHOOTER_ERROR 25
+#define INDEX_SPEED 0.8
 #endif
 
 
 class Robot: public frc::IterativeRobot {
 private:
+	PowerDistributionPanel *pdp;
 	//variables
 	int manipState;
 	int fileCount;
@@ -75,6 +80,8 @@ private:
 	Path *path_gearLoadBluePeg, *path_gearLoadBluePeg2, *path_gearLoadRedPeg, *path_gearLoadRedPeg2;
 	//for shoot then cross auto
 	Path *path_blueShot1, *path_blueShot2, *path_redShot1, *path_redShot2;
+	//path for driving to loader from boiler side
+	Path *path_gearBoilerBlueLoader2, *path_gearBoilerRedLoader2;
 
 
 	SimPID *pathDrivePID;
@@ -258,7 +265,7 @@ private:
 	void RobotInit(void) override
 	{
 		//CameraServer::GetInstance()->StartAutomaticCapture();
-
+		pdp = new PowerDistributionPanel();
 		//variables
 		manipState = 0;
 		fileCount = 1;
@@ -289,7 +296,7 @@ private:
 		m_shooterB->ConfigEncoderCodesPerRev(4096);
 		m_shooterB->SetSensorDirection(true);
 		m_shooterB->SelectProfileSlot(0);
-		m_shooterB->SetPID(0.05, 0, 0.4, 0.035); //ff was 0.033
+		m_shooterB->SetPID(0.1, 0, 0.4, 0.0335); //ff was 0.033
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
@@ -419,7 +426,7 @@ private:
 
 		//center peg red side
 		cp6[1] = -cp6[1];
-		int centerPegRedEndLoader[2] = {-37511, 14500};
+		int centerPegRedEndLoader[2] = {-40000, 14500};
 		int redEndLoaderHalf[2] = {-9238, 14500};
 		path_gearCenterPegRed2 = new PathCurve(end, zero, cp6, redEndLoaderHalf, 40);
 		temp = new PathLine(redEndLoaderHalf, centerPegRedEndLoader, 10);
@@ -428,7 +435,7 @@ private:
 
 		//center peg blue ship
 		int cp7[2] = {-3000, -8500};
-		int centerPegBlueEndLoader2[2] = {-37511, -8500};
+		int centerPegBlueEndLoader2[2] = {-40000, -8500};
 		int blueEndLoaderHalf2[2] = {-9238, -8500};
 		path_gearCenterPegBlue3 = new PathCurve(end, zero, cp7, blueEndLoaderHalf2, 40);
 		temp = new PathLine(blueEndLoaderHalf2, centerPegBlueEndLoader2, 10);
@@ -437,7 +444,7 @@ private:
 
 		//center peg red ship
 		cp7[1] = -cp7[1];
-		int centerPegRedEndLoader2[2] = {-37511, 8500};
+		int centerPegRedEndLoader2[2] = {-40000, 8500};
 		int redEndLoaderHalf2[2] = {-9238, 8500};
 		path_gearCenterPegRed3 = new PathCurve(end, zero, cp7, redEndLoaderHalf2, 40);
 		temp = new PathLine(redEndLoaderHalf2, centerPegRedEndLoader2, 10);
@@ -482,11 +489,23 @@ private:
 		leftShotEnd[1] = -leftShotEnd[1];
 		path_gearShootRedPeg2 = new PathCurve(leftPegEnd, cp2, cp1, leftShotEnd, 40); //angle 43
 
+		//gear boiler side then drive
+		int cp11[2] = {-5000, 3000};
+		int cp12[2] = {-18000 , 8000};
+		int boilerLoaderEnd[2] = {-40000, -18500};
+		int boilerPegBlue[2] = {-9950, -2300};
+		int boilerPegRed[2] = {-9950, 2300};
+		path_gearBoilerBlueLoader2 = new PathCurve(boilerPegBlue, cp11, cp12, boilerLoaderEnd, 50);
+		cp11[1] = -cp11[1];
+		cp12[1] = -cp12[1];
+		boilerLoaderEnd[1] = -boilerLoaderEnd[1];
+		path_gearBoilerRedLoader2 = new PathCurve(boilerPegRed, cp11, cp12, boilerLoaderEnd, 50);
+
 		//gear then loader autos
 		int cp3[2] = {-7000, 0};
 		int cp4[2] = {-6000, -1000};
 		int RightPegEnd[2] = {-9600, 5250};//{-9300, 5000};
-		int RightLoadEnd[2] = {-37511, -2029};
+		int RightLoadEnd[2] = {-40000, -2029};
 		path_gearLoadBluePeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
 		cp3[0] = -6500;
 		cp3[1] = 670;
@@ -699,8 +718,8 @@ private:
 				}
 				break;
 			case 4:
-				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint) || autoTimer->Get() > 4.0) //practice 0.06
-					m_intoShooter->SetSpeed(0.8);
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR) //practice 0.06
+					m_intoShooter->SetSpeed(INDEX_SPEED);
 				else
 					m_intoShooter->SetSpeed(0.f);
 
@@ -782,7 +801,7 @@ private:
 				setPoint = AUTO_SHOOTER_SPEED;
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 				m_shooterB->Set(setPoint);
-				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.06 * fabs(setPoint)) // BEAN (Old conditional wasn't working)
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR) // BEAN (Old conditional wasn't working)
 					m_intoShooter->SetSpeed(1.0);
 				else
 					m_intoShooter->SetSpeed(0.f);
@@ -845,8 +864,8 @@ private:
 				break;
 			case 4: //shoot
 				advancedAutoDrive();
-				if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint) || autoTimer->Get() > 4.0) //practice 0.06
-					m_intoShooter->SetSpeed(0.8);
+				if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR) //practice 0.06
+					m_intoShooter->SetSpeed(INDEX_SPEED);
 				else
 					m_intoShooter->SetSpeed(0.f);
 
@@ -861,6 +880,62 @@ private:
 				break;
 			}
 			break;
+		case 6: //Autonomous mode boiler side peg, drive to loader
+			switch(autoState){
+			case 0: //Initial case. All motors and actuators are stopped lest a command is carried over from the previous robot session
+				m_leftDrive0->SetSpeed(0.f);
+				m_leftDrive1->SetSpeed(0.f);
+				m_rightDrive2->SetSpeed(0.f);
+				m_rightDrive3->SetSpeed(0.f);
+				m_intake->SetSpeed(0.f);
+				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
+				m_shooterB->Set(0.f);
+				m_intoShooter->SetSpeed(0.f);
+				if(turnSide == BLUE_SIDE)
+					PEPPER->initPath(path_gearShootBluePeg, PathBackward, 60);
+				else
+					PEPPER->initPath(path_gearShootRedPeg, PathBackward, -60);
+				/* The initPath protocol is part of ShiftLib's path program
+				 * The program uses algorithms from angles and encoder outputs to determine it's position in two dimensions as opposed to one
+				 * The first input is an array of coordinates that form a Bezier curve
+				 * The second input is the direction the robot must face. In this case, it faces backward.
+				 * The third input is the angle at which the robot rests, determined by the gyroscope
+				 * This is phase 1, where the path has been determined
+				 */
+				autoState++;
+				break;
+			case 1: //First case. Path program is in phase two, wherein the robot follows the predetermined path. Autonomous mode ends.
+				if (advancedAutoDrive()){
+					autoState++;
+					agTimer->Reset();
+					agTimer->Start();
+				}
+				break;
+			case 2:
+
+				m_gearPushIn->Set(false);
+				m_gearPushOut->Set(true);
+				advancedAutoDrive();
+				if(agTimer->Get() > 0.5) {
+					if(turnSide == BLUE_SIDE){
+						PEPPER->initPath(path_gearBoilerBlueLoader2, PathForward, 0);
+					}
+					else{
+						PEPPER->initPath(path_gearBoilerRedLoader2, PathForward, 0);
+					}
+					autoState++;
+				}
+				break;
+			case 3:
+				if(advancedAutoDrive()) {
+					autoTimer->Reset();
+					autoTimer->Start();
+					autoState++;
+				}
+				break;
+			}
+			break;
+
 		}
 	}
 
@@ -934,7 +1009,7 @@ private:
 		m_shooterB->Set(motorOutput);
 		float encoderRPM = m_shooterB->GetSpeed()*18.75f/128.f;
 
-		DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
+		//DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
 
 
 	}
@@ -968,14 +1043,14 @@ private:
 			m_shooterB->Set(setPoint);
 			//->Set(SHOOTER_RATIO);
 
-			if(fabs(m_shooterB->GetSpeed() - setPoint) < 0.04 * fabs(setPoint)) // practice bot was 0.6
-				m_intoShooter->SetSpeed(0.8); //practice bot is 1.0
+			if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR )// 0.04 * fabs(setPoint)) // practice bot was 0.6
+				m_intoShooter->SetSpeed(INDEX_SPEED); //practice bot is 1.0
 			else
 				m_intoShooter->SetSpeed(0.f);
 
 
 			m_shooterB->Set(setPoint);
-			DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
+			//DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 
 			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM);
 			file << buffer;
@@ -990,6 +1065,12 @@ private:
 		else if(m_Gamepad->GetBackButton()) {
 			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(setPoint);
+			if(m_Gamepad->GetBButton()){
+				m_intoShooter->SetSpeed(INDEX_SPEED);
+			}
+			else{
+				m_intoShooter->SetSpeed(0.0);
+			}
 		}
 		else if(m_Gamepad->GetBButton()) {
 			m_intoShooter->SetSpeed(0.5);
@@ -1099,7 +1180,9 @@ private:
 	}
 
 	void advancedClimb() {
-		double target; // BEN A made many changes here
+		double target;
+		double current = pdp->GetCurrent(2);
+
 		if(m_Gamepad->GetPOV(0) == DP_UP)
 			target = m_climber->GetPosition() - 1/m_climber->GetP();
 		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
@@ -1107,10 +1190,16 @@ private:
 		else
 			target = lastClimberPos;
 
+		if(current - 40 > 0.0){
+			target = m_climber->GetPosition() + 1/(16*m_climber->GetP());
+			DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
+		}
+
+		DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
 		m_climber->Set(target);
 		lastClimberPos = target;
 
-		DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
+		//DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
 	}
 
 	/*void simpleClimb() {
