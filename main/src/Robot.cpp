@@ -105,7 +105,7 @@ private:
 
 	//Talons
 	CANTalon *m_shooterB;
-	CANTalon *m_shooterA;
+	CANTalon *m_climberS;
 	CANTalon *m_climber;
 	//CANTalon *//;
 
@@ -300,9 +300,9 @@ private:
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
-		m_shooterA = new CANTalon(3);
-		m_shooterA->SetControlMode(CANSpeedController::kFollower);
-		m_shooterA->Set(1);
+		m_climberS = new CANTalon(3);
+		m_climberS->SetControlMode(CANSpeedController::kFollower);
+		m_climberS->Set(2);
 
 		m_climber = new CANTalon(2);
 		m_climber->SetControlMode(CANSpeedController::kPosition);
@@ -418,7 +418,7 @@ private:
 		//center peg blue side
 		int cp6[2] = {-3000, -14500};
 		int blueEndLoaderHalf[2] = {-9238, -14500};
-		int centerPegBlueEndLoader[2] = {-37511, -14500};
+		int centerPegBlueEndLoader[2] = {-43000, -14500}; //-37511
 		path_gearCenterPegBlue2 = new PathCurve(end, zero, cp6, blueEndLoaderHalf, 40);
 		Path *temp = new PathLine(blueEndLoaderHalf, centerPegBlueEndLoader, 10);
 		path_gearCenterPegBlue2->add(temp);
@@ -426,7 +426,7 @@ private:
 
 		//center peg red side
 		cp6[1] = -cp6[1];
-		int centerPegRedEndLoader[2] = {-40000, 14500};
+		int centerPegRedEndLoader[2] = {-43000, 14500}; //-40000
 		int redEndLoaderHalf[2] = {-9238, 14500};
 		path_gearCenterPegRed2 = new PathCurve(end, zero, cp6, redEndLoaderHalf, 40);
 		temp = new PathLine(redEndLoaderHalf, centerPegRedEndLoader, 10);
@@ -954,7 +954,7 @@ private:
 		//operateShooter();
 		//trim();
 		ShooterPID();
-		operateShift();
+		//operateShift();
 		operateGear();
 		advancedClimb();
 	}
@@ -1097,15 +1097,22 @@ private:
 #define PRACTICE_DRIVE_LIMIT 1
 
 	inline void teleDrive(void) {
-		float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-    	float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		if(m_shiftHigh->Get() && !m_shiftLow->Get())
+		{
+			float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 1), 1) - scale(limit(expo(m_Joystick->GetX(), 2), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+			float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 1), 1) - scale(limit(expo(m_Joystick->GetX(), 2), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		}
 
+		else
+		{
+			float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+			float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		}
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
 		m_rightDrive2->SetSpeed(rightSpeed);
 		m_rightDrive3->SetSpeed(rightSpeed);
 	}
-
 /*	void manipulatorControl(void) {
 
 		switch(manipState)
