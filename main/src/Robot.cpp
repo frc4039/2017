@@ -16,7 +16,7 @@
 #include <LiveWindow/LiveWindow.h>
 #include "shiftlib.h"
 
-//#define PRACTICE_BOT
+#define PRACTICE_BOT
 
 //CONSTANTS
 #define SHOOTER_RPM 4000
@@ -100,13 +100,13 @@ private:
 	VictorSP *m_rightDrive2;
 	VictorSP *m_rightDrive3;
 
-	VictorSP *m_intake;
+	//VictorSP *//m_intake;
 	VictorSP *m_intoShooter;
 
 	//Talons
 	CANTalon *m_shooterB;
-	CANTalon *m_climberS;
-	CANTalon *m_climber;
+	VictorSP *m_climber1;
+	VictorSP *m_climber2;
 	//CANTalon *//;
 
 	//Encoders
@@ -127,7 +127,7 @@ private:
 	Solenoid *m_shiftHigh, *m_shiftLow;
 	Solenoid *m_gearPushOut, *m_gearPushIn;
 	Solenoid *m_gearPropOut, *m_gearPropIn;
-	Solenoid *m_intakeIn, *m_intakeOut;
+	//Solenoid *m_intakeIn, *m_intakeOut;
 	Solenoid *m_introducerIn, *m_introducerOut;
 	Solenoid *m_gearHoldIn, *m_gearHoldOut;
 
@@ -287,7 +287,7 @@ private:
 		m_rightDrive3->SetSafetyEnabled(true);
 
 		m_intoShooter = new VictorSP(6);
-		m_intake = new VictorSP(4);
+		////m_intake = new VictorSP(4);
 
 		//Talons
 		m_shooterB = new CANTalon(1);
@@ -300,21 +300,10 @@ private:
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
-		m_climberS = new CANTalon(3);
-		m_climberS->SetControlMode(CANSpeedController::kFollower);
-		m_climberS->Set(2);
+		m_climber1 = new VictorSP(4);
 
-		m_climber = new CANTalon(2);
-		m_climber->SetControlMode(CANSpeedController::kPosition);
+		m_climber2 = new VictorSP(5);
 		//m_climber->SetControlMode(CANSpeedController::kSpeed);
-		m_climber->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
-		m_climber->ConfigEncoderCodesPerRev(4096);
-		m_climber->SetSensorDirection(true); // BEN A
-		m_climber->SetPID(1, 0, 0, 0); // BEN A
-		m_climber->SetCloseLoopRampRate(0);
-		m_climber->SetAllowableClosedLoopErr(0);
-		m_climber->SelectProfileSlot(0);
-		m_climber->SetPosition(0.0); // BEN A
 		lastClimberPos = 0.0; // BEN A
 
 		// = new CANTalon(2);
@@ -347,8 +336,8 @@ private:
 		m_shiftLow = new Solenoid(1);
 		m_gearPushOut = new Solenoid(2);
 		m_gearPushIn = new Solenoid(3);
-		m_introducerIn = new Solenoid(6); //4
-		m_introducerOut = new Solenoid(7); //5
+		//m_introducerIn = new Solenoid(6); //4
+		//m_introducerOut = new Solenoid(7); //5
 		m_gearHoldOut = new Solenoid(4); //6
 		m_gearHoldIn = new Solenoid(5); //7
 
@@ -545,8 +534,8 @@ private:
 	{
 		m_gearLED->Set(Relay::kOff);
 		m_shotLED->Set(Relay::kOff);
-		lastClimberPos = m_climber->GetPosition();
-		m_climber->Set(lastClimberPos);
+		//lastClimberPos = m_climber2->GetPosition();
+		//m_climber2->Set(lastClimberPos);
 	}
 
 	void DisabledPeriodic()
@@ -555,6 +544,7 @@ private:
 		DriverStation::ReportError("Left encoder" + std::to_string((long)m_leftEncoder->Get()) + "Right Encoder" + std::to_string((long)m_rightEncoder->Get()) + "Gyro" + std::to_string(nav->GetYaw()));
 		DriverStation::ReportError("Auto Mode: " + std::to_string(autoMode) + (turnSide == RED_SIDE ? " RED" : " BLUE") + (autoMode == 1 && nZoneLane == RAIL_LANE ? " Wall Lane" :
 																														   autoMode == 1 && nZoneLane == SHIP_LANE ? " Ship Lane" : ""));
+		//DriverStation::ReportError(std::to_string(m_Gamepad->GetRawAxis(5)));
 //#endif
 		if(m_Joystick->GetRawButton(11)) {
 			turnSide = RED_SIDE;
@@ -609,7 +599,7 @@ private:
 			m_leftDrive1->SetSpeed(0.f);
 			m_rightDrive2->SetSpeed(0.f);
 			m_rightDrive3->SetSpeed(0.f);
-			m_intake->SetSpeed(0.f);
+			//m_intake->SetSpeed(0.f);
 			m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
@@ -622,7 +612,7 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
+				//m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -668,7 +658,7 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
+				//m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -741,7 +731,7 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
+				//m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -784,7 +774,7 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
+				//m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -826,7 +816,7 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
+				//m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -853,7 +843,7 @@ private:
 				break;
 			case 3: //drive to shoot
 				setPoint = SHOOTER_SPEED;
-				//m_intake->SetSpeed(INTAKE_SPEED);
+				////m_intake->SetSpeed(INTAKE_SPEED);
 				m_shooterB->SetControlMode(CANSpeedController::kSpeed);
 				m_shooterB->Set(setPoint);
 				if(advancedAutoDrive() || PEPPER->getLinearDistance() < 500) {
@@ -874,7 +864,7 @@ private:
 				//}
 				break;
 			case 5:
-				//m_intake->SetSpeed(0.f);
+				////m_intake->SetSpeed(0.f);
 				m_shooterB->Set(0.0f);
 				m_intoShooter->SetSpeed(0.f);
 				break;
@@ -887,7 +877,7 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
+				//m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -943,18 +933,18 @@ private:
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
 		m_gearLED->Set(Relay::kOn);
-		lastClimberPos = m_climber->GetPosition();
-		m_climber->Set(lastClimberPos);
+		//lastClimberPos = m_climber2->GetPosition();
+		//m_climber2->Set(lastClimberPos);
 	}
 
 	void TeleopPeriodic()
 	{
-		operateIntake();
+		//operateIntake();
 		teleDrive();
 		//operateShooter();
 		//trim();
 		ShooterPID();
-		//operateShift();
+		operateShift();
 		operateGear();
 		advancedClimb();
 	}
@@ -965,28 +955,28 @@ private:
 
 //=====================TELEOP FUNCTIONS=======================
 
-	void operateIntake() {
+/*	void operateIntake() {
 		if (m_Gamepad->GetRawButton(GP_L)) {
-			m_intake->SetSpeed(INTAKE_SPEED);
+			//m_intake->SetSpeed(INTAKE_SPEED);
 			//m_elevate->SetSpeed(-INTAKE_SPEED);
 		}
 		else if(m_Gamepad->GetRawButton(GP_R)) {
-			m_intake->SetSpeed(-INTAKE_SPEED);
+			//m_intake->SetSpeed(-INTAKE_SPEED);
 			//m_elevate->SetSpeed(INTAKE_SPEED);
 		}
 		else {
-			m_intake->SetSpeed(0.f);
+			//m_intake->SetSpeed(0.f);
 			//m_elevate->SetSpeed(0.f);
 		}
-		/*if(m_Gamepad->GetPOV(DP_UP)) {
-			m_intakeIn->Set(true);
-			m_intakeOut->Set(false);
+		if(m_Gamepad->GetPOV(DP_UP)) {
+			//m_intakeIn->Set(true);
+			//m_intakeOut->Set(false);
 		}
 		else if(m_Gamepad->GetPOV(DP_DOWN)){
-			m_intakeOut->Set(true);
-			m_intakeIn->Set(false);
-		}*/
-	}
+			//m_intakeOut->Set(true);
+			//m_intakeIn->Set(false);
+		}
+	}*/
 
 	/*void operateShooter()
 	{
@@ -1023,14 +1013,14 @@ private:
 			if(agTimer->Get() > 6.0) {
 	*/
 				setPoint = -3225;
-				m_introducerOut->Set(false);
-				m_introducerIn->Set(true);
+				//m_introducerOut->Set(false);
+				//m_introducerIn->Set(true);
 			}
-			else {
-				m_introducerOut->Set(true);
-				m_introducerIn->Set(false);
-				setPoint = SHOOTER_SPEED;
-			}
+			//else {
+				//m_introducerOut->Set(true);
+				//m_introducerIn->Set(false);
+				//setPoint = SHOOTER_SPEED;
+			//}
 
 		gettimeofday(&tv, 0);
 
@@ -1049,7 +1039,7 @@ private:
 				m_intoShooter->SetSpeed(0.f);
 
 
-			m_shooterB->Set(setPoint);
+			//m_shooterB->Set(setPoint);
 			//DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 
 			sprintf(buffer, "%d:%d , %d , %d , %f\n", (int)tv.tv_sec, (int)tv.tv_usec, setPoint, (int)encoderRPM, m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM);
@@ -1097,17 +1087,17 @@ private:
 #define PRACTICE_DRIVE_LIMIT 1
 
 	inline void teleDrive(void) {
-		if(m_shiftHigh->Get() && !m_shiftLow->Get())
+		/*if(m_shiftHigh->Get() && !m_shiftLow->Get())
 		{
 			float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 1), 1) - scale(limit(expo(m_Joystick->GetX(), 2), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
 			float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 1), 1) - scale(limit(expo(m_Joystick->GetX(), 2), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
 		}
 
 		else
-		{
-			float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-			float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-		}
+		{*/
+		float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
 		m_rightDrive2->SetSpeed(rightSpeed);
@@ -1187,26 +1177,16 @@ private:
 	}
 
 	void advancedClimb() {
-		double target;
-		double current = pdp->GetCurrent(2);
+		float climberSpeed = limit2(m_Gamepad->GetRawAxis(5), 0, -1);
 
-		if(m_Gamepad->GetPOV(0) == DP_UP)
-			target = m_climber->GetPosition() - 1/m_climber->GetP();
-		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
-			target = m_climber->GetPosition() + 1/m_climber->GetP();
-		else
-			target = lastClimberPos;
-
-		if(current - 40 > 0.0){
-			target = m_climber->GetPosition() + 1/(16*m_climber->GetP());
-			DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
+		if(fabs(climberSpeed) > 0.008) {
+			m_climber1->SetSpeed(-climberSpeed);
+			m_climber2->SetSpeed(climberSpeed);
 		}
-
-		DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
-		m_climber->Set(target);
-		lastClimberPos = target;
-
-		//DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
+		else {
+			m_climber1->SetSpeed(0.f);
+			m_climber2->SetSpeed(0.f);
+		}
 	}
 
 	/*void simpleClimb() {
@@ -1299,6 +1279,14 @@ private:
 			return lim;
 		else if(x < -lim)
 			return -lim;
+		return x;
+	}
+
+	inline float limit2(float x, float highlim, float lowlim) {
+		if(x > highlim)
+			return highlim;
+		else if(x < lowlim)
+			return lowlim;
 		return x;
 	}
 
