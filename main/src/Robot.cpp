@@ -100,13 +100,12 @@ private:
 	VictorSP *m_rightDrive2;
 	VictorSP *m_rightDrive3;
 
-	VictorSP *m_intake;
 	VictorSP *m_intoShooter;
 
 	//Talons
 	CANTalon *m_shooterB;
-	CANTalon *m_shooterA;
-	CANTalon *m_climber;
+	VictorSP *m_climber1;
+	VictorSP *m_climber2;
 	//CANTalon *//;
 
 	//Encoders
@@ -126,9 +125,6 @@ private:
 	//pneumatics
 	Solenoid *m_shiftHigh, *m_shiftLow;
 	Solenoid *m_gearPushOut, *m_gearPushIn;
-	Solenoid *m_gearPropOut, *m_gearPropIn;
-	Solenoid *m_intakeIn, *m_intakeOut;
-	Solenoid *m_introducerIn, *m_introducerOut;
 	Solenoid *m_gearHoldIn, *m_gearHoldOut;
 
 	//PIDS
@@ -287,7 +283,6 @@ private:
 		m_rightDrive3->SetSafetyEnabled(true);
 
 		m_intoShooter = new VictorSP(6);
-		m_intake = new VictorSP(4);
 
 		//Talons
 		m_shooterB = new CANTalon(1);
@@ -300,22 +295,9 @@ private:
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
-		m_shooterA = new CANTalon(3);
-		m_shooterA->SetControlMode(CANSpeedController::kFollower);
-		m_shooterA->Set(1);
 
-		m_climber = new CANTalon(2);
-		m_climber->SetControlMode(CANSpeedController::kPosition);
-		//m_climber->SetControlMode(CANSpeedController::kSpeed);
-		m_climber->SetFeedbackDevice(CANTalon::CtreMagEncoder_Relative);
-		m_climber->ConfigEncoderCodesPerRev(4096);
-		m_climber->SetSensorDirection(true); // BEN A
-		m_climber->SetPID(1, 0, 0, 0); // BEN A
-		m_climber->SetCloseLoopRampRate(0);
-		m_climber->SetAllowableClosedLoopErr(0);
-		m_climber->SelectProfileSlot(0);
-		m_climber->SetPosition(0.0); // BEN A
-		lastClimberPos = 0.0; // BEN A
+		m_climber1 = new VictorSP(7);
+		m_climber2 = new VictorSP(8);
 
 		// = new CANTalon(2);
 		//->SetControlMode(CANSpeedController::kSpeed);
@@ -347,8 +329,6 @@ private:
 		m_shiftLow = new Solenoid(1);
 		m_gearPushOut = new Solenoid(2);
 		m_gearPushIn = new Solenoid(3);
-		m_introducerIn = new Solenoid(6); //4
-		m_introducerOut = new Solenoid(7); //5
 		m_gearHoldOut = new Solenoid(4); //6
 		m_gearHoldIn = new Solenoid(5); //7
 
@@ -418,7 +398,7 @@ private:
 		//center peg blue side
 		int cp6[2] = {-3000, -14500};
 		int blueEndLoaderHalf[2] = {-9238, -14500};
-		int centerPegBlueEndLoader[2] = {-37511, -14500};
+		int centerPegBlueEndLoader[2] = {-40000, -14500};
 		path_gearCenterPegBlue2 = new PathCurve(end, zero, cp6, blueEndLoaderHalf, 40);
 		Path *temp = new PathLine(blueEndLoaderHalf, centerPegBlueEndLoader, 10);
 		path_gearCenterPegBlue2->add(temp);
@@ -543,10 +523,7 @@ private:
 
 	void DisabledInit()
 	{
-		m_gearLED->Set(Relay::kOff);
-		m_shotLED->Set(Relay::kOff);
-		lastClimberPos = m_climber->GetPosition();
-		m_climber->Set(lastClimberPos);
+
 	}
 
 	void DisabledPeriodic()
@@ -609,7 +586,6 @@ private:
 			m_leftDrive1->SetSpeed(0.f);
 			m_rightDrive2->SetSpeed(0.f);
 			m_rightDrive3->SetSpeed(0.f);
-			m_intake->SetSpeed(0.f);
 			m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
@@ -622,7 +598,6 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -668,7 +643,6 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -741,7 +715,6 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -784,7 +757,6 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -826,7 +798,6 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -887,7 +858,6 @@ private:
 				m_leftDrive1->SetSpeed(0.f);
 				m_rightDrive2->SetSpeed(0.f);
 				m_rightDrive3->SetSpeed(0.f);
-				m_intake->SetSpeed(0.f);
 				m_shooterB->SetControlMode(CANSpeedController::kPercentVbus);
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
@@ -942,17 +912,12 @@ private:
 	void TeleopInit() {
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
-		m_gearLED->Set(Relay::kOn);
-		lastClimberPos = m_climber->GetPosition();
-		m_climber->Set(lastClimberPos);
 	}
 
 	void TeleopPeriodic()
 	{
-		operateIntake();
+
 		teleDrive();
-		//operateShooter();
-		//trim();
 		ShooterPID();
 		operateShift();
 		operateGear();
@@ -965,70 +930,12 @@ private:
 
 //=====================TELEOP FUNCTIONS=======================
 
-	void operateIntake() {
-		if (m_Gamepad->GetRawButton(GP_L)) {
-			m_intake->SetSpeed(INTAKE_SPEED);
-			//m_elevate->SetSpeed(-INTAKE_SPEED);
-		}
-		else if(m_Gamepad->GetRawButton(GP_R)) {
-			m_intake->SetSpeed(-INTAKE_SPEED);
-			//m_elevate->SetSpeed(INTAKE_SPEED);
-		}
-		else {
-			m_intake->SetSpeed(0.f);
-			//m_elevate->SetSpeed(0.f);
-		}
-		/*if(m_Gamepad->GetPOV(DP_UP)) {
-			m_intakeIn->Set(true);
-			m_intakeOut->Set(false);
-		}
-		else if(m_Gamepad->GetPOV(DP_DOWN)){
-			m_intakeOut->Set(true);
-			m_intakeIn->Set(false);
-		}*/
-	}
-
-	/*void operateShooter()
-	{
-		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
-			setPoint = -3225;
-			m_introducerOut->Set(false);
-			m_introducerIn->Set(true);
-		}
-		else {
-			m_introducerOut->Set(true);
-			m_introducerIn->Set(false);
-			setPoint = -3210;
-		}
-	}*/
-
-	void trim(){
-		float motorOutput = 0.5*m_Joystick->GetRawAxis(3) + 0.5;
-
-		m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
-		m_shooterB->Set(motorOutput);
-		float encoderRPM = m_shooterB->GetSpeed()*18.75f/128.f;
-
-		//DriverStation::ReportError("Encoder speed" + std::to_string((long)encoderRPM));
-
-
-	}
-
 	void ShooterPID() {
 
-		//int setPoint = -(1500 * (0.5 * m_Joystick->GetRawAxis(3) + 0.5) + 2000);
 		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
-		/*	if(agTimer->Get() > 3.0)
-				m_intoShooter->SetSpeed(1.0);
-			if(agTimer->Get() > 6.0) {
-	*/
 				setPoint = -3225;
-				m_introducerOut->Set(false);
-				m_introducerIn->Set(true);
 			}
 			else {
-				m_introducerOut->Set(true);
-				m_introducerIn->Set(false);
 				setPoint = SHOOTER_SPEED;
 			}
 
@@ -1041,7 +948,6 @@ private:
 			agTimer->Start();
 			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(setPoint);
-			//->Set(SHOOTER_RATIO);
 
 			if(fabs(m_shooterB->GetSpeed() - setPoint) < SHOOTER_ERROR )// 0.04 * fabs(setPoint)) // practice bot was 0.6
 				m_intoShooter->SetSpeed(INDEX_SPEED); //practice bot is 1.0
@@ -1079,20 +985,12 @@ private:
 		{
 			m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0);
-			//->Set(0.f);
 			m_intoShooter->SetSpeed(0.f);
-			//m_introducerOut->Set(true);
-			//m_introducerIn->Set(false);
+
 			agTimer->Stop();
 			agTimer->Reset();
 		}
 
-		/*if(m_Gamepad->GetBButton()){
-			m_intoShooter->SetSpeed(0.5);
-		}
-		else if (!m_Gamepad->GetBButton()){
-			m_intoShooter->SetSpeed(0.f);
-		}*/
 	}
 #define PRACTICE_DRIVE_LIMIT 1
 
@@ -1105,48 +1003,6 @@ private:
 		m_rightDrive2->SetSpeed(rightSpeed);
 		m_rightDrive3->SetSpeed(rightSpeed);
 	}
-
-/*	void manipulatorControl(void) {
-
-		switch(manipState)
-		{
-		case 0:
-			//m_agitator->SetSpeed(0);
-			//m_shooter1->Set(0);
-			////->Set(0);
-
-			if(m_Gamepad->GetAButton())
-			{
-				manipState = 1;
-			}
-
-			break;
-
-		case 1:
-			//m_agitator->SetSpeed(0);
-			//m_shooter1->Set(0);
-			////->Set(0);
-
-			if(m_Gamepad->GetBButton())
-			{
-				manipState = 2;
-			}
-
-			break;
-
-		case 2:
-			//m_agitator->SetSpeed(1.0);
-			//m_shooter1->Set(1.0);
-			////->Set(1.0);
-
-			if(m_Gamepad->GetXButton())
-			{
-				manipState = 1;
-			}
-
-			break;
-		}
-	}*/
 
 	void operateShift() {
 		if(m_Joystick->GetRawButton(1)) {
@@ -1180,55 +1036,24 @@ private:
 	}
 
 	void advancedClimb() {
-		double target;
-		double current = pdp->GetCurrent(2);
-
-		if(m_Gamepad->GetPOV(0) == DP_UP)
-			target = m_climber->GetPosition() - 1/m_climber->GetP();
-		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
-			target = m_climber->GetPosition() + 1/m_climber->GetP();
-		else
-			target = lastClimberPos;
-
-		if(current - 40 > 0.0){
-			target = m_climber->GetPosition() + 1/(16*m_climber->GetP());
-			DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
+		 float climberSpeed = limit2(m_Gamepad->GetRawAxis(5), 0, -1);
+		 if(fabs(climberSpeed) > 0.008) {
+			   m_climber1->SetSpeed(-climberSpeed);
+			   m_climber2->SetSpeed(climberSpeed);
+		}
+		else {
+			   m_climber1->SetSpeed(0.f);
+			   m_climber2->SetSpeed(0.f);
 		}
 
-		DriverStation::ReportError("Climber Over Current: " + std::to_string(current));
-		m_climber->Set(target);
-		lastClimberPos = target;
 
 		//DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
 	}
 
-	/*void simpleClimb() {
-		//printf("climb error: %d\n", m_climber->GetClosedLoopError()*NATIVE_TO_RPM);
-		if(m_Gamepad->GetPOV(0) == DP_UP) {
-			m_climber->Set(CLIMB_SPEED);
-			//if(m_climber->GetSpeed() < 10)
-				//m_climber->Set(0.f);
-		}
-		else if(m_Gamepad->GetPOV(0) == DP_DOWN)
-			m_climber->Set(-CLIMB_SPEED);
-		else
-			m_climber->Set(0.f);
-		DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
-	}*/
 
 //=====================VISION FUNCTIONS=====================
 
 
-	/*bool aimAtTarget() {
-		float turn = last_turn;
-
-		return 0;
-	}*/
-
-	/*bool lineUpGear() {//travis did this :3
-		int targetCenter;
-		return false;
-	}*/
 
 //=====================AUTO FUNCTIONS=====================
 
@@ -1261,17 +1086,6 @@ private:
 		return PEPPER->isDone();
 	}
 
-/*	int getDriveSpeed() {
-		int currentDrivePos = (m_leftEncoder->Get() + m_rightEncoder->Get()) / 2;
-		int lastDrivePos;
-		bool temp = true;
-		if(encTimer->Get() > 0.1) {
-			return currentDrivePos -
-			encTimer->Reset();
-		}
-		return -1;
-	}*/
-
 //=======================MATHY FUNCTIONS============================
 	inline float expo(float x, int n)
 	{
@@ -1295,12 +1109,19 @@ private:
 		return x;
 	}
 
+	inline float limit2(float x, float highlim, float lowlim) {
+		if(x > highlim)
+			   return highlim;
+		else if(x < lowlim)
+			   return lowlim;
+		return x;
+	}
+
+
 	inline float scale(float x, float scale)
 	{
 		return x * scale;
 	}
 };
-	/*Void DONOTENTER() {
-his name is travis -Bacca
-}*/
+
 START_ROBOT_CLASS(Robot)
