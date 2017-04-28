@@ -1,6 +1,11 @@
 #ifndef __PATH__
 #define __PATH__
 
+struct Point {
+	int x;
+	int y;
+};
+
 class Path
 {
 public:

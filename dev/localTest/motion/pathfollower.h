@@ -6,6 +6,7 @@
 #include "SimPID.h"
 
 #include <stdint.h>
+#include <vector>
 
 typedef enum PathFollower_directions_enum{
 	PathForward = 1,
@@ -39,7 +40,8 @@ private:
 	float maxTurnError;
 	float turnSpeed, driveSpeed;
 	float normalize(float normalAngle);
-
+	int followMode;
+	std::vector<void (*)(void)> modeCallback;
 
 public:
 	PathFollower();
@@ -54,6 +56,8 @@ public:
 	bool isDone(void);
 	SimPID *turnPID;
 	SimPID *drivePID;
+	void changeMode(int mode);
+	int addMode(void (*callback)(void));
 };
 
 #endif

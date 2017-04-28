@@ -1,7 +1,8 @@
 #include "motion/path.h"
 #include "motion/pathcurve.h"
-//#include "motion/pathfollower.h"
+#include "motion/pathfollower.h"
 #include "motion/pathline.h"
+#include "motion/SimPID.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -18,9 +19,16 @@ PathCurve createPath(int targetX, int targetY, float targetNormal){
 	int c3[2] = {(int)(end[0]+(C*cos(targetNormal))), (int)(end[1]+(C*sin(targetNormal)))};
 
 	PathCurve curve = PathCurve(start,c2,c3,end,200);
-	curve.show();
+	//curve.show();
 
 	return curve;
+}
+
+void mode1(void){
+	printf("now in mode 1\n");
+}
+void mode2(void){
+	printf("now in mode 2\n");
 }
 
 int main(){
@@ -30,6 +38,39 @@ int main(){
 
 	//creates path pased on those values
 	createPath(x, y, normal);
+
+	int start[2] = {0,0};
+	int cp1[2] = {-7000, 0};
+	int cp2[2] = {-8000, 1000};
+	int end[2] = {-9950, -2300};
+	int cp3[2] = {-5000, 3000};
+	int cp4[2] = {-18000, 8000};
+	int endend[2] = {-37500, -18500};
+
+	int hopper1[2] = {-11374, 0};
+	int hopper2[2] = {1675, 24168};
+	int h2_1[2] = {-10000, 10000};
+	int h2_2[2] = {-10000, 10000};
+	int hopper3[2] = {-25606, 13562};
+	int hopper4[2] = {-14582, 39504};
+	int h4_1[2] = {-15000, 30000};
+	int h4_2[2] = {-15000, 30000};
+	
+	Path *hoppers = new PathLine(start, hopper1, 2);
+	hoppers->add(new PathCurve(hopper1, h2_1, h2_2, hopper2, 10));
+	hoppers->add(new PathLine(hopper2, hopper3, 2));
+	hoppers->add(new PathCurve(hopper3, h4_1, h4_2, hopper4, 10));
+	hoppers->show();
+
+	Path *curve = new PathCurve(start, cp1, cp2, end, 40);
+	curve->add(new PathCurve(end,cp3, cp4, endend, 50));
+	//curve->show();
+
+	PathFollower *robot = new PathFollower();
+	robot->addMode(mode1);
+	robot->addMode(mode2);
+	robot->changeMode(0);
+	robot->changeMode(1);
 
 	return 0;
 }

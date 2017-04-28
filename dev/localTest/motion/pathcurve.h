@@ -14,6 +14,7 @@ private:
 	int fact(int x);
 public: 
 	PathCurve(int start[2], int ncp1[2], int ncp2[2], int end[2], int nresolution);
+	PathCurve(Point start[2], Point ncp1[2], Point ncp2[2], Point end[2], int nresolution);
 	void calculate();
 };
 

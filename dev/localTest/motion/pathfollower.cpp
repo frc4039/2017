@@ -15,7 +15,7 @@ PathFollower::PathFollower(){
 	lastX = lastY = 0;
 	nextPoint = 0;
 	leftSpeed = rightSpeed = 0;
-
+	followMode = 0;
 }
 
 void PathFollower::initPath(Path *nPath, PathDirection nDirection, float nFinalAngleDegrees){
@@ -182,5 +182,15 @@ float PathFollower::driveToAngle(void){
 bool PathFollower::isDone()
 {
 	return done;
+}
+
+void PathFollower::changeMode(int mode){
+	followMode = mode;
+	modeCallback[mode]();
+}
+
+int PathFollower::addMode(void (*callback)(void)){
+	modeCallback.push_back(callback);
+	return modeCallback.size() - 1;
 }
 
