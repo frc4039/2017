@@ -445,7 +445,7 @@ private:
 		//gear then shoot balls
 		int cp1[2] = {-7000, 0};
 		int cp2[2] = {-8000, 1000}; //{-9000, 1000};
-		int leftPegEnd[2] = {-9950, -2300};//{-10800, -2700};
+		int leftPegEnd[2] = {-9950, -2500};//{-10800, -2700};
 		int leftShotEnd[2] = {-1000, 5041};//{-270, 5941};
 		path_gearShootBluePeg = new PathCurve(zero, cp1, cp2, leftPegEnd, 40);
 		cp1[0] = -5544;
@@ -473,8 +473,8 @@ private:
 		int cp11[2] = {-5000, 3000};
 		int cp12[2] = {-18000 , 8000};
 		int boilerLoaderEnd[2] = {-40000, -18500};
-		int boilerPegBlue[2] = {-9950, -2300};
-		int boilerPegRed[2] = {-9950, 2300};
+		int boilerPegBlue[2] = {-9950, -2200};
+		int boilerPegRed[2] = {-9950, 2200};
 		path_gearBoilerBlueLoader2 = new PathCurve(boilerPegBlue, cp11, cp12, boilerLoaderEnd, 50);
 		cp11[1] = -cp11[1];
 		cp12[1] = -cp12[1];
@@ -484,7 +484,7 @@ private:
 		//gear then loader autos
 		int cp3[2] = {-7000, 0};
 		int cp4[2] = {-6000, -1000};
-		int RightPegEnd[2] = {-9600, 5250};//{-9300, 5000};
+		int RightPegEnd[2] = {-9800, 5150};//{-9300, 5000};
 		int RightLoadEnd[2] = {-40000, -2029};
 		path_gearLoadBluePeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
 		cp3[0] = -6500;
