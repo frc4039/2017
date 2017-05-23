@@ -57,6 +57,9 @@ private:
 	int nZoneLane;
 	int climbState;
 	int lastClimberPos;
+	bool isPushed;
+
+	int pneumaticState;
 
 	/*int leftT;
 	int rightT;
@@ -269,6 +272,7 @@ private:
 		turnSide = RED_SIDE;
 		nZoneLane = RAIL_LANE;
 		climbState = 0;
+		isPushed = false;
 
 		file.open("/home/lvuser/pid.csv", std::ios::out);
 
@@ -910,18 +914,22 @@ private:
 	}
 
 	void TeleopInit() {
+		pneumaticState = 0;
+		isPushed = false;
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
 	}
 
 	void TeleopPeriodic()
 	{
-
 		teleDrive();
 		ShooterPID();
-		operateShift();
-		operateGear();
-		advancedClimb();
+		if(pneumaticState == 0) {
+			operateShift();
+			operateGear();
+		}
+		//advancedClimb();
+		pneumaticTest();
 	}
 
 	void TestPeriodic() {
@@ -1035,6 +1043,7 @@ private:
 		}
 	}
 
+	/*
 	void advancedClimb() {
 		 float climberSpeed = limit2(m_Gamepad->GetRawAxis(5), 0, -1);
 		 if(fabs(climberSpeed) > 0.008) {
@@ -1045,12 +1054,47 @@ private:
 			   m_climber1->SetSpeed(0.f);
 			   m_climber2->SetSpeed(0.f);
 		}
-
-
-		//DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
+		 //DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
 	}
+	*/
 
-
+	void pneumaticTest()
+	{
+		if(m_Joystick->GetRawButton(7) && m_Joystick->GetRawButton(8)) {
+			isPushed = true;
+			if(pneumaticState == 0)
+				pneumaticState = 1;
+		}
+		if(!(m_Joystick->GetRawButton(7) || m_Joystick->GetRawButton(8)) && isPushed && pneumaticState == 1)
+		{
+			m_shiftHigh->Set(true);
+			m_shiftLow->Set(false);
+			m_gearPushOut->Set(true);
+			m_gearPushIn->Set(false);
+			m_gearHoldOut->Set(true);
+			m_gearHoldIn->Set(false);
+			for(int a = 0; a <= 1; a++) {
+				pneumaticState = 2;
+				isPushed = false;
+			}
+		}
+		else if(!(m_Joystick->GetRawButton(7) || m_Joystick->GetRawButton(8)) && isPushed && pneumaticState == 2)
+		{
+			m_shiftHigh->Set(false);
+			m_shiftLow->Set(true);
+			m_gearPushOut->Set(false);
+			m_gearPushIn->Set(true);
+			m_gearHoldOut->Set(false);
+			m_gearHoldIn->Set(true);
+			pneumaticState = 1;
+			for(int b = 0; b <= 1; b++) {
+				pneumaticState = 1;
+				isPushed = false;
+			}
+		}
+		if(m_Joystick->GetRawButton(9))
+			pneumaticState = 0;
+	}
 //=====================VISION FUNCTIONS=====================
 
 
@@ -1122,6 +1166,7 @@ private:
 	{
 		return x * scale;
 	}
+
 };
 
 START_ROBOT_CLASS(Robot)
