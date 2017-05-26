@@ -273,6 +273,7 @@ private:
 		nZoneLane = RAIL_LANE;
 		climbState = 0;
 		isPushed = false;
+		pneumaticState = 2;
 
 		file.open("/home/lvuser/pid.csv", std::ios::out);
 
@@ -914,7 +915,7 @@ private:
 	}
 
 	void TeleopInit() {
-		pneumaticState = 0;
+		pneumaticState = 2;
 		isPushed = false;
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
@@ -924,11 +925,11 @@ private:
 	{
 		teleDrive();
 		ShooterPID();
-		if(pneumaticState == 0) {
+		if(pneumaticState != 1) {
 			operateShift();
 			operateGear();
 		}
-		//advancedClimb();
+		advancedClimb();
 		pneumaticTest();
 	}
 
@@ -1043,7 +1044,7 @@ private:
 		}
 	}
 
-	/*
+
 	void advancedClimb() {
 		 float climberSpeed = limit2(m_Gamepad->GetRawAxis(5), 0, -1);
 		 if(fabs(climberSpeed) > 0.008) {
@@ -1056,15 +1057,12 @@ private:
 		}
 		 //DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
 	}
-	*/
+
 
 	void pneumaticTest()
 	{
-		if(m_Joystick->GetRawButton(7) && m_Joystick->GetRawButton(8)) {
+		if(m_Joystick->GetRawButton(7) && m_Joystick->GetRawButton(8))
 			isPushed = true;
-			if(pneumaticState == 0)
-				pneumaticState = 1;
-		}
 		if(!(m_Joystick->GetRawButton(7) || m_Joystick->GetRawButton(8)) && isPushed && pneumaticState == 1)
 		{
 			m_shiftHigh->Set(true);
@@ -1073,10 +1071,8 @@ private:
 			m_gearPushIn->Set(false);
 			m_gearHoldOut->Set(true);
 			m_gearHoldIn->Set(false);
-			for(int a = 0; a <= 1; a++) {
-				pneumaticState = 2;
-				isPushed = false;
-			}
+			pneumaticState = 2;
+			isPushed = false;
 		}
 		else if(!(m_Joystick->GetRawButton(7) || m_Joystick->GetRawButton(8)) && isPushed && pneumaticState == 2)
 		{
@@ -1087,13 +1083,8 @@ private:
 			m_gearHoldOut->Set(false);
 			m_gearHoldIn->Set(true);
 			pneumaticState = 1;
-			for(int b = 0; b <= 1; b++) {
-				pneumaticState = 1;
-				isPushed = false;
-			}
+			isPushed = false;
 		}
-		if(m_Joystick->GetRawButton(9))
-			pneumaticState = 0;
 	}
 //=====================VISION FUNCTIONS=====================
 
