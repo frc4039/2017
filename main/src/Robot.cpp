@@ -924,13 +924,13 @@ private:
 	void TeleopPeriodic()
 	{
 		teleDrive();
+		pneumaticTest();
 		ShooterPID();
 		if(pneumaticState != 1) {
 			operateShift();
 			operateGear();
 		}
 		advancedClimb();
-		pneumaticTest();
 	}
 
 	void TestPeriodic() {
