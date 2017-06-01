@@ -25,6 +25,7 @@
 #define GP_R 6
 #define DP_UP 0
 #define DP_DOWN 180
+#define DP_LEFT 90
 #define GP_BL 2
 #define GP_BR 3
 #define INCHES_TO_ENCODERS 1245/12
@@ -58,6 +59,9 @@ private:
 	int climbState;
 	int lastClimberPos;
 	bool isPushed;
+	bool POSITION_ONE;
+	bool POSITION_TWO;
+	bool POSITION_THREE;
 
 	int pneumaticState;
 
@@ -104,12 +108,13 @@ private:
 	VictorSP *m_rightDrive3;
 
 	VictorSP *m_intoShooter;
+	VictorSP *m_climber1;
+	VictorSP *m_climber2;
+	VictorSP *m_gearRoller;
 
 	//Talons
 	CANTalon *m_shooterB;
-	VictorSP *m_climber1;
-	VictorSP *m_climber2;
-	//CANTalon *//;
+	CANTalon *m_gearIntake;
 
 	//Encoders
 	Encoder *m_leftEncoder;
@@ -300,9 +305,15 @@ private:
 		m_shooterB->SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
+		m_gearIntake = new CANTalon(0);
+		m_gearIntake->SetControlMode(CANSpeedController::kPosition);
+		m_gearIntake->ConfigEncoderCodesPerRev(4096);
+		m_gearIntake->SetPID(0, 0, 0, 0);
 
 		m_climber1 = new VictorSP(7);
 		m_climber2 = new VictorSP(8);
+
+		m_gearRoller = new VictorSP(9);
 
 		// = new CANTalon(2);
 		//->SetControlMode(CANSpeedController::kSpeed);
@@ -930,9 +941,7 @@ private:
 			operateShift();
 			operateGear();
 		}
-		advancedClimb();
 	}
-
 	void TestPeriodic() {
 
 	}
@@ -1086,7 +1095,17 @@ private:
 			isPushed = false;
 		}
 	}
-//=====================VISION FUNCTIONS=====================
+
+	void gearIntake() {
+		if(m_Gamepad->GetPOV(DP_UP))
+			m_gearIntake->Set(POSITION_ONE);
+		else if(m_Gamepad->GetPOV(DP_DOWN))
+			m_gearIntake->Set(POSITION_TWO);
+		else if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) || m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kRightHand))
+			m_gearIntake->Set(POSITION_THREE);
+	}
+
+//=====================VISIO7N FUNCTIONS=====================
 
 
 
