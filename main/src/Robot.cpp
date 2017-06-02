@@ -25,13 +25,18 @@
 #define GP_R 6
 #define DP_UP 0
 #define DP_DOWN 180
-#define DP_LEFT 90
+#define DP_LEFT 270
+#define DP_RIGHT 90
 #define GP_BL 2
 #define GP_BR 3
 #define INCHES_TO_ENCODERS 1245/12
 #define MIDDLE_PEG_INCHES 69.3
 #define INTAKE_SPEED 1.0 //0.6
 #define CLIMB_SPEED 80
+#define POSITION_ONE 0
+#define POSITION_TWO 90
+#define POSITION_THREE 180
+
 
 #ifdef PRACTICE_BOT
 #define SHOOTER_SPEED -3160 //practice bot
@@ -59,10 +64,6 @@ private:
 	int climbState;
 	int lastClimberPos;
 	bool isPushed;
-	bool POSITION_ONE;
-	bool POSITION_TWO;
-	bool POSITION_THREE;
-
 	int pneumaticState;
 
 	/*int leftT;
@@ -950,12 +951,12 @@ private:
 
 	void ShooterPID() {
 
-		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
+	/*	if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
 				setPoint = -3225;
 			}
 			else {
 				setPoint = SHOOTER_SPEED;
-			}
+			}*/
 
 		gettimeofday(&tv, 0);
 
@@ -1096,16 +1097,21 @@ private:
 		}
 	}
 
-	void gearIntake() {
+	void simpleGearIntake() {
 		if(m_Gamepad->GetPOV(DP_UP))
 			m_gearIntake->Set(POSITION_ONE);
 		else if(m_Gamepad->GetPOV(DP_DOWN))
 			m_gearIntake->Set(POSITION_TWO);
-		else if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) || m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kRightHand))
+		else if(m_Gamepad->GetPOV(DP_LEFT) || m_Gamepad->GetPOV(DP_RIGHT))
 			m_gearIntake->Set(POSITION_THREE);
+
+		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9)
+			m_gearRoller->SetSpeed(1.0);
+		else
+			m_gearRoller->SetSpeed(0.f);
 	}
 
-//=====================VISIO7N FUNCTIONS=====================
+//=====================VISION FUNCTIONS=====================
 
 
 
