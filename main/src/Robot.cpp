@@ -17,6 +17,7 @@
 #include "shiftlib.h"
 
 //#define PRACTICE_BOT
+//#define AUTO_STOP
 
 //CONSTANTS
 #define SHOOTER_RPM 4000
@@ -44,9 +45,9 @@
 #define SHOOTER_ERROR 125
 #define INDEX_SPEED 0.8
 #else
-#define SHOOTER_SPEED -3045
+#define SHOOTER_SPEED -3135 //was -3045
 #define AUTO_SHOOTER_SPEED -3225
-#define SHOOTER_ERROR 25
+#define SHOOTER_ERROR 50 //was 25
 #define INDEX_SPEED 0.8
 #endif
 
@@ -135,6 +136,7 @@ private:
 	Solenoid *m_shiftHigh, *m_shiftLow;
 	Solenoid *m_gearPushOut, *m_gearPushIn;
 	Solenoid *m_gearHoldIn, *m_gearHoldOut;
+	Solenoid *m_ballBlockIn, *m_ballBlockOut;
 
 	//PIDS
 	SimPID *speedToPowerPID;
@@ -279,7 +281,7 @@ private:
 		nZoneLane = RAIL_LANE;
 		climbState = 0;
 		isPushed = false;
-		pneumaticState = 2;
+		pneumaticState = 0;
 
 		file.open("/home/lvuser/pid.csv", std::ios::out);
 
@@ -302,8 +304,8 @@ private:
 		m_shooterB->ConfigEncoderCodesPerRev(4096);
 		m_shooterB->SetSensorDirection(true);
 		m_shooterB->SelectProfileSlot(0);
-		m_shooterB->SetPID(0.1, 0, 0.4, 0.0335); //ff was 0.033
-		m_shooterB->SetCloseLoopRampRate(15);
+		m_shooterB->SetPID(0.15, 0, 0.4, 0.0335); //ff was 0.033, p was 0.1
+		m_shooterB-> SetCloseLoopRampRate(15);
 		m_shooterB->SetAllowableClosedLoopErr(0);
 
 		m_gearIntake = new CANTalon(0);
@@ -348,6 +350,8 @@ private:
 		m_gearPushIn = new Solenoid(3);
 		m_gearHoldOut = new Solenoid(4); //6
 		m_gearHoldIn = new Solenoid(5); //7
+		m_ballBlockOut = new Solenoid(6);
+		m_ballBlockIn = new Solenoid(7);
 
 		//LED
 		m_gearLED = new Relay(0);
@@ -761,12 +765,12 @@ private:
 						PEPPER->initPath(path_gearLoadRedPeg2, PathForward, 0);
 				}
 				break;
+#ifndef AUTO_STOP
 			case 3: //drive away to loader
 				advancedAutoDrive();
+#endif
 			}
-
 			break;
-
 		case 4:
 			switch(autoState) {
 			case 0:
@@ -927,7 +931,7 @@ private:
 	}
 
 	void TeleopInit() {
-		pneumaticState = 2;
+		pneumaticState = 0;
 		isPushed = false;
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
@@ -938,10 +942,11 @@ private:
 		teleDrive();
 		pneumaticTest();
 		ShooterPID();
-		if(pneumaticState != 1) {
+		if(pneumaticState == 0) {
 			operateShift();
 			operateGear();
 		}
+		advancedClimb();
 	}
 	void TestPeriodic() {
 
@@ -951,14 +956,18 @@ private:
 
 	void ShooterPID() {
 
-	/*	if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
-				setPoint = -3225;
-			}
-			else {
-				setPoint = SHOOTER_SPEED;
-			}*/
+		setPoint = SHOOTER_SPEED;
 
 		gettimeofday(&tv, 0);
+
+		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9) {
+			m_ballBlockIn->Set(true);
+			m_ballBlockOut->Set(false);
+		}
+		else {
+			m_ballBlockIn->Set(false);
+			m_ballBlockOut->Set(true);
+		}
 
 		float encoderRPM = m_shooterB->GetSpeed();
 		DriverStation::ReportError("setpoint: "+ std::to_string(setPoint) + "Encoder speed" + std::to_string((long)encoderRPM));
@@ -973,7 +982,6 @@ private:
 			else
 				m_intoShooter->SetSpeed(0.f);
 
-
 			m_shooterB->Set(setPoint);
 			//DriverStation::ReportError("speed error " + std::to_string(m_shooterB->GetClosedLoopError()*NATIVE_TO_RPM));
 
@@ -982,7 +990,7 @@ private:
 
 			fileCount++;
 		}
-		else if(m_Gamepad->GetStartButton()) {
+		else if(m_Gamepad->GetBButton()) {
 			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0.6 * SHOOTER_RPM);
 			m_intoShooter->SetSpeed(-0.2);
@@ -990,17 +998,14 @@ private:
 		else if(m_Gamepad->GetBackButton()) {
 			m_shooterB->SetControlMode(CANSpeedController::kSpeed); // BEN A (makes deceleration coast)
 			m_shooterB->Set(setPoint);
-			if(m_Gamepad->GetBButton()){
+			if(m_Gamepad->GetBButton())
 				m_intoShooter->SetSpeed(INDEX_SPEED);
-			}
-			else{
-				m_intoShooter->SetSpeed(0.0);
-			}
-		}
-		else if(m_Gamepad->GetBButton()) {
-			m_intoShooter->SetSpeed(0.5);
-		}
 			else
+				m_intoShooter->SetSpeed(0.0);
+		}
+		else if(m_Gamepad->GetStartButton())
+			m_intoShooter->SetSpeed(0.5);
+		else
 		{
 			m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 			m_shooterB->Set(0);
@@ -1071,8 +1076,11 @@ private:
 
 	void pneumaticTest()
 	{
-		if(m_Joystick->GetRawButton(7) && m_Joystick->GetRawButton(8))
+		if(m_Joystick->GetRawButton(7) && m_Joystick->GetRawButton(8)) {
 			isPushed = true;
+			if(pneumaticState == 0)
+				pneumaticState = 1;
+		}
 		if(!(m_Joystick->GetRawButton(7) || m_Joystick->GetRawButton(8)) && isPushed && pneumaticState == 1)
 		{
 			m_shiftHigh->Set(true);
@@ -1095,6 +1103,8 @@ private:
 			pneumaticState = 1;
 			isPushed = false;
 		}
+		if(m_Joystick->GetRawButton(9))
+			pneumaticState = 0;
 	}
 
 	void simpleGearIntake() {
@@ -1105,8 +1115,10 @@ private:
 		else if(m_Gamepad->GetPOV(DP_LEFT) || m_Gamepad->GetPOV(DP_RIGHT))
 			m_gearIntake->Set(POSITION_THREE);
 
-		if(m_Gamepad->GetTriggerAxis(GenericHID::JoystickHand::kLeftHand) > 0.9)
+		if(m_Gamepad->GetRawButton(GP_R))
 			m_gearRoller->SetSpeed(1.0);
+		else if(m_Gamepad->GetRawButton(GP_L))
+			m_gearRoller->SetSpeed(-1.0);
 		else
 			m_gearRoller->SetSpeed(0.f);
 	}
