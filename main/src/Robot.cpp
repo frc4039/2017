@@ -401,10 +401,10 @@ private:
 		pathTurnPID->setContinuousAngle(true);
 
 		//pathDrivePID = new SimPID(0.001, 0, 0.0002, 0, 100); practice bot
-		pathDrivePID = new SimPID(0.000875, 0, 0.0002, 0, 200);
+		pathDrivePID = new SimPID(0.002, 0, 0.002, 0, 200); //was 0.000875
 		pathDrivePID->setMaxOutput(0.9);
 
-		pathFinalTurnPID = new SimPID(0.825, 0, 0.02, 0, 0.087266);
+		pathFinalTurnPID = new SimPID(0.9, 0, 0.02, 0, 0.087266); // was 0.825
 		pathFinalTurnPID->setContinuousAngle(true);
 #endif
 
@@ -503,18 +503,18 @@ private:
 		path_gearBoilerRedLoader2 = new PathCurve(boilerPegRed, cp11, cp12, boilerLoaderEnd, 50);
 
 		//gear then loader autos
-		int cp3[2] = {-7000, 0};
+		int cp3[2] = {-2000, 0};
 		int cp4[2] = {-6000, -1000};
 		int RightPegEnd[2] = {-9800, 5150};//{-9300, 5000};
 		int RightLoadEnd[2] = {-40000, -2029};
-		path_gearLoadBluePeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
+		path_gearLoadBluePeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40); //was 40
 		cp3[0] = -6500;
 		cp3[1] = 670;
 		cp4[0] = -28700;
 		cp4[1] = -1345;
 		path_gearLoadBluePeg2 = new PathCurve(RightPegEnd, cp3, cp4, RightLoadEnd, 60);
 		//red side
-		cp3[0] = -7000;
+		cp3[0] = -2000;
 		cp3[1] = 0;
 		cp4[0] = -6000;
 		cp4[1] = 1000;
@@ -596,6 +596,8 @@ private:
 		m_shooterB->SetControlMode(CANSpeedController::kPercentVbus); // BEN A (makes deceleration coast)
 		m_shooterB->Set(0.f);
 		m_gearLED->Set(Relay::kOn);
+		m_shiftLow->Set(true);
+		m_shiftHigh->Set(false);
 		autoTimer->Reset();
 	}
 
