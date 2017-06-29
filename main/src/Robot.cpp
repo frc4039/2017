@@ -720,7 +720,7 @@ private:
 				else
 					m_intoShooter->SetSpeed(0.f);
 
-				if (agTimer->Get() > 8){
+				if (agTimer->Get() > 12){
 					autoState++;
 				}
 				break;
