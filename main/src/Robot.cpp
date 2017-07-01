@@ -45,9 +45,9 @@
 #define SHOOTER_ERROR 125
 #define INDEX_SPEED 0.8
 #else
-#define SHOOTER_SPEED -3135 //was -3045
+#define SHOOTER_SPEED -3235 //was -3135
 #define AUTO_SHOOTER_SPEED -3225
-#define SHOOTER_ERROR 50 //was 25
+#define SHOOTER_ERROR 50
 #define INDEX_SPEED 0.8
 #endif
 
@@ -599,6 +599,8 @@ private:
 		m_shiftLow->Set(true);
 		m_shiftHigh->Set(false);
 		autoTimer->Reset();
+		m_climber1->SetSpeed(0.f);
+		m_climber2->SetSpeed(0.f);
 	}
 
 	void AutonomousPeriodic()
@@ -1063,14 +1065,14 @@ private:
 
 
 	void advancedClimb() {
-		 float climberSpeed = limit2(m_Gamepad->GetRawAxis(5), 0, -1);
-		 if(fabs(climberSpeed) > 0.008) {
-			   m_climber1->SetSpeed(-climberSpeed);
-			   m_climber2->SetSpeed(climberSpeed);
+		float climberSpeed = limit2(m_Gamepad->GetRawAxis(5), 0, -1);
+		if(fabs(climberSpeed) > 0.008) {
+			m_climber1->SetSpeed(-climberSpeed);
+			m_climber2->SetSpeed(climberSpeed);
 		}
 		else {
-			   m_climber1->SetSpeed(0.f);
-			   m_climber2->SetSpeed(0.f);
+			m_climber1->SetSpeed(0.f);
+			m_climber2->SetSpeed(0.f);
 		}
 		 //DriverStation::ReportError("ClimberPos" + std::to_string((long)m_climber->GetPosition()));
 	}
