@@ -505,7 +505,7 @@ private:
 		//gear then loader autos
 		int cp3[2] = {-2000, 0};
 		int cp4[2] = {-6000, -1000};
-		int RightPegEnd[2] = {-9800, 5150};//{-9300, 5000};
+		int RightPegEnd[2] = {-9800, 5150};//{-9300, 5000}; test numbers {-10200, 6200}
 		int RightLoadEnd[2] = {-40000, -2029};
 		path_gearLoadBluePeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40); //was 40
 		cp3[0] = -6500;
@@ -518,14 +518,15 @@ private:
 		cp3[1] = 0;
 		cp4[0] = -6000;
 		cp4[1] = 1000;
-		RightPegEnd[1] = -RightPegEnd[1];
-		path_gearLoadRedPeg = new PathCurve(zero, cp3, cp4, RightPegEnd, 40);
+		int RightPegEnd2[2] = {-9800*1.07, -5150*1.07};
+//		RightPegEnd[1] = -RightPegEnd[1];
+		path_gearLoadRedPeg = new PathCurve(zero, cp3, cp4, RightPegEnd2, 40);
 		cp3[0] = -6500;
 		cp3[1] = -670;
 		cp4[0] = -28700;
 		cp4[1] = 1345;
 		RightLoadEnd[1] = -RightLoadEnd[1];
-		path_gearLoadRedPeg2 = new PathCurve(RightPegEnd, cp3, cp4, RightLoadEnd, 60);
+		path_gearLoadRedPeg2 = new PathCurve(RightPegEnd2, cp3, cp4, RightLoadEnd, 60);
 
 		PEPPER = new PathFollower(500, PI/3, pathDrivePID, pathTurnPID, pathFinalTurnPID);
 		PEPPER->setIsDegrees(true);
@@ -628,6 +629,8 @@ private:
 				m_intoShooter->SetSpeed(0.f);
 				PEPPER->initPath(path_gearCenterPeg, PathBackward, 0);
 				autoState++;
+				agTimer->Reset();
+				agTimer->Start();
 				break;
 			case 1:
 				if (advancedAutoDrive()){
@@ -682,6 +685,8 @@ private:
 				 * The third input is the angle at which the robot rests, determined by the gyroscope
 				 * This is phase 1, where the path has been determined
 				 */
+				agTimer->Reset();
+				agTimer->Start();
 				autoState++;
 				break;
 			case 1: //First case. Path program is in phase two, wherein the robot follows the predetermined path. Autonomous mode ends.
@@ -748,9 +753,11 @@ private:
 				else
 					PEPPER->initPath(path_gearLoadRedPeg, PathBackward, 60);
 				autoState ++;
+				agTimer->Reset();
+				agTimer->Start();
 				break;
 			case 1:
-				if(advancedAutoDrive()){
+				if(advancedAutoDrive() || agTimer->Get() > 7){
 					autoState++;
 					agTimer->Reset();
 					agTimer->Start();
@@ -827,6 +834,8 @@ private:
 				m_shooterB->Set(0.f);
 				m_intoShooter->SetSpeed(0.f);
 				PEPPER->initPath(path_gearCenterPeg, PathBackward, 0);
+				agTimer->Reset();
+				agTimer->Start();
 				autoState++;
 				break;
 			case 1:
@@ -897,6 +906,8 @@ private:
 				 * The third input is the angle at which the robot rests, determined by the gyroscope
 				 * This is phase 1, where the path has been determined
 				 */
+				agTimer->Reset();
+				agTimer->Start();
 				autoState++;
 				break;
 			case 1: //First case. Path program is in phase two, wherein the robot follows the predetermined path. Autonomous mode ends.
@@ -1023,8 +1034,15 @@ private:
 #define PRACTICE_DRIVE_LIMIT 1
 
 	inline void teleDrive(void) {
-		float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-    	float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		//if(!m_Joystick->GetRawButton(1)) {
+			float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+			float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		//}
+		//else
+		//{
+		//	float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 4), 1) - scale(limit(expo(m_Joystick->GetX(), 5), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		//	float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 4), 1) - scale(limit(expo(m_Joystick->GetX(), 5), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		//}
 
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
