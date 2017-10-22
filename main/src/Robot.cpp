@@ -1034,15 +1034,17 @@ private:
 #define PRACTICE_DRIVE_LIMIT 1
 
 	inline void teleDrive(void) {
-		//if(!m_Joystick->GetRawButton(1)) {
-			float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-			float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 2), 1) - scale(limit(expo(m_Joystick->GetX(), 3), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-		//}
-		//else
-		//{
-		//	float leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 4), 1) - scale(limit(expo(m_Joystick->GetX(), 5), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-		//	float rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 4), 1) - scale(limit(expo(m_Joystick->GetX(), 5), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
-		//}
+		float leftSpeed;
+		float rightSpeed;
+		if(!m_Joystick->GetRawButton(1)) {
+			leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 4), 1) - scale(limit(expo(m_Joystick->GetX(), 4), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+			rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 4), 1) - scale(limit(expo(m_Joystick->GetX(), 4), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		}
+		else
+		{
+			leftSpeed = scale(limit(expo(-m_Joystick->GetY(), 6), 1) - scale(limit(expo(m_Joystick->GetX(), 6), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+			rightSpeed = scale(-limit(expo(-m_Joystick->GetY(), 6), 1) - scale(limit(expo(m_Joystick->GetX(), 6), 1), 0.8f), PRACTICE_DRIVE_LIMIT);
+		}
 
 		m_leftDrive0->SetSpeed(leftSpeed);
 		m_leftDrive1->SetSpeed(leftSpeed);
